@@ -1,0 +1,81 @@
+"""Plan and node models. Dependencies are declared here, never inferred from model output."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+from typing import Self
+
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
+
+_FROZEN = ConfigDict(frozen=True, extra="forbid")
+
+
+class FreshnessPolicy(StrEnum):
+    # Valid exactly as long as the declared source snapshot / index version are current.
+    SNAPSHOT = "snapshot"
+
+
+class Node(BaseModel):
+    model_config = _FROZEN
+
+    id: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9_-]*$")  # plan-local; not part of signature
+    operator: str
+    canonical_parameters: dict[str, JsonValue]
+    input_ids: tuple[str, ...] = ()
+    source_snapshot: str | None
+    index_version: str | None
+    model_version: str | None
+    access_scope: str = Field(min_length=1)
+    freshness_policy: FreshnessPolicy = FreshnessPolicy.SNAPSHOT
+    output_contract: str
+
+
+class PlanValidationError(ValueError):
+    pass
+
+
+class Plan(BaseModel):
+    model_config = _FROZEN
+
+    nodes: tuple[Node, ...]
+    output_id: str
+
+    @model_validator(mode="after")
+    def _validate(self) -> Self:
+        ids = [n.id for n in self.nodes]
+        if len(ids) != len(set(ids)):
+            raise PlanValidationError("duplicate node id")
+        by_id = {n.id: n for n in self.nodes}
+        if self.output_id not in by_id:
+            raise PlanValidationError(f"output node {self.output_id!r} not in plan")
+        for n in self.nodes:
+            for dep in n.input_ids:
+                if dep not in by_id:
+                    raise PlanValidationError(f"node {n.id!r} depends on unknown {dep!r}")
+                if by_id[dep].access_scope != n.access_scope:
+                    # Fail closed: no mixing evidence across access scopes inside one plan.
+                    raise PlanValidationError(f"node {n.id!r} crosses access scope via {dep!r}")
+        self.layers()  # raises on cycles
+        return self
+
+    def node(self, node_id: str) -> Node:
+        for n in self.nodes:
+            if n.id == node_id:
+                return n
+        raise KeyError(node_id)
+
+    def layers(self) -> list[list[Node]]:
+        """Topological layers (Kahn). Nodes within a layer are independent; sorted by id."""
+        remaining = {n.id: set(n.input_ids) for n in self.nodes}
+        by_id = {n.id: n for n in self.nodes}
+        done: set[str] = set()
+        out: list[list[Node]] = []
+        while remaining:
+            ready = sorted(nid for nid, deps in remaining.items() if deps <= done)
+            if not ready:
+                raise PlanValidationError("plan contains a cycle")
+            out.append([by_id[nid] for nid in ready])
+            done.update(ready)
+            for nid in ready:
+                del remaining[nid]
+        return out

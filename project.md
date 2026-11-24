@@ -1,0 +1,188 @@
+# DeltaQuery RAG — Project Spec
+
+> Dependency-aware incremental retrieval over heterogeneous knowledge structures.
+> Status: **proposed architecture. Novelty and performance are not yet established.**
+
+## 1. Core Idea
+Treat RAG as a **stateful execution engine**, not a fresh search per question. Compile each information request into a reusable retrieval plan (a DAG). When the user revises the question, diff the new plan against the old one, keep valid evidence, and recompute only the operations whose results are no longer valid.
+
+## 2. Research Question
+Can dependency-aware reuse across revised natural-language queries reduce retrieval and reasoning cost **at matched answer accuracy**, compared with:
+1. full re-execution,
+2. exact subquery (operator) caching,
+3. semantic caching?
+
+**Decisive test:** beat exact operator caching, not just naive RAG.
+
+## 3. Deliverables
+- Open-source Python retrieval runtime + SDK
+- Multi-retriever adapter interface
+- Versioned, immutable evidence store
+- Interactive execution trace UI (executed / reused / invalidated / removed nodes)
+- **DeltaBench**: benchmark of evolving-question sequences
+
+## 4. Scope
+| Tier | Content |
+|---|---|
+| Primary contribution | Incremental retrieval-plan reconciliation and safe evidence reuse |
+| MVP | Text conversations; lexical (BM25), dense, document-tree retrieval |
+| Extension | Graph/SQL operators, source updates, real-time voice |
+| Non-goals | Generic chatbot, supporting every retrieval engine, replacing PageIndex or any vector DB |
+
+## 5. Worked Example (acceptance scenario)
+Frozen corpus of fictional cloud-provider docs.
+
+| Revision | Intent change | Expected behavior |
+|---|---|---|
+| Q1 | compare(AWS, Azure, feature=DR) | Execute A (AWS), B (Azure), D (compare), E (generate) |
+| Q2 | replace(Azure, GCP) | Reuse A; remove B; execute C (GCP); recompute D, regenerate E |
+| Q3 | add_constraint(RPO == 0) | Check evidence sufficiency; expand retrieval if coverage inadequate; recompute extracted claims |
+| Q4 | add_dimension(pricing) | Add pricing nodes; keep compatible DR evidence; apply freshness policy to prices |
+
+Rules: reusable evidence ≠ reusable final answer. Unrelated query → full execution fallback. Every answer cites exact source spans.
+
+## 6. Architecture (8 layers)
+1. **Intent compiler** — query + prior intent → typed entities, predicates, scope, output requirements
+2. **Logical planner** — DAG of retrieval, extraction, filter, join, fusion, synthesis operators
+3. **Reconciler** — match old/new nodes by canonical signature; propagate changes
+4. **Executor** — async, concurrent independent nodes; cancel obsolete work; enforce budgets
+5. **Retriever adapters** — BM25, dense, doc-tree (later graph, SQL) behind common contracts
+6. **Evidence store** — immutable source spans, result manifests, dependency edges, versions
+7. **Validator** — freshness, access scope, evidence coverage, claim support
+8. **Answer generator** — cited answer from valid evidence; abstain if insufficient
+
+Principles: single process first (SQLite/Postgres); Redis only for distributed state/cancellation; planner, executor and evidence model independent of UI and LLM vendor.
+
+## 7. Evidence Contract (the hard part)
+```
+Node { id, operator, canonical_parameters, input_ids, source_snapshot,
+       index_version, model_version, access_scope, freshness_policy, output_contract }
+Evidence { source_id, source_version, span, content_hash, retrieval_node_id,
+           score, extracted_claims, coverage_type, created_at }
+```
+- Signature = content-addressed hash over canonical params + input artifact hashes + relevant versions.
+- **Never** declare equivalence from embedding similarity alone. A semantic matcher may *propose* reuse; conservative validation must *approve*.
+- Deterministic operators: exact equivalence testable. LLM operators: evaluate statistically, never claim strict equality.
+
+### Reuse rules
+| Change | Action |
+|---|---|
+| Entity replacement | Remove obsolete branch; execute new branch; recompute dependent joins |
+| Added constraint | Check sufficiency of existing evidence; expand retrieval if needed |
+| Source/index update | Invalidate dependents or rerun on new snapshot |
+| Permission change | Reauthorize every reused artifact; never share across tenants |
+| Changed rank fusion | Recompute fusion over current candidate sets |
+| Model/prompt change | Invalidate affected generated artifacts |
+
+### Fallback policy
+Invalid compiler output, unclear scope, unknown freshness, or unprovable sufficiency → rerun branch or whole plan. **Fail closed on access control.**
+
+## 8. Algorithm Sketch
+`revise(session, text)`: compile intent → build + validate DAG → for each topological layer, resolve nodes concurrently (signature lookup → validate → reuse or execute+store) → grounded generate → if epoch superseded return `superseded()`, else commit. Dependencies come from the plan, never from LLM prose. Cancel removed nodes; suppress late results from old epochs. Production needs transactions, timeouts, error handling.
+
+Objective: minimize cost (latency, tokens, compute) subject to evidence validity and quality threshold. MVP uses a rule-based policy; learned reuse policy is a later experiment.
+
+## 9. Tech Stack
+| Component | Choice |
+|---|---|
+| Runtime | Python 3.11+, FastAPI, asyncio, Pydantic |
+| Lexical / dense | BM25 + FAISS/Qdrant (OpenSearch optional) |
+| Doc tree | Simple heading/page tree; PageIndex adapter later |
+| Embeddings | BGE-M3 or smaller local model |
+| Persistence | SQLite (MVP) → PostgreSQL; Redis optional |
+| Generation | Hosted LLM with structured output; local optional |
+| UI / tracing | Next.js, DAG visualization, OpenTelemetry |
+| Testing | pytest, frozen corpus, deterministic operator fixtures |
+
+## 10. Repository Layout
+```
+deltaquery/
+  compiler/    # intent schema, plan builder
+  runtime/     # DAG, scheduler, reconcile, cancellation
+  operators/   # bm25, dense, tree, fusion, extraction
+  evidence/    # artifact store, provenance, validity
+  api/         # sessions, query, trace endpoints
+  eval/        # benchmark, baselines, metrics
+  web/         # plan diff + evidence inspection
+  tests/       # correctness + security fixtures
+```
+
+## 11. API
+```
+POST /sessions
+POST /sessions/{id}/queries   {text, expected_version}
+GET  /sessions/{id}/plans/{version}
+GET  /sessions/{id}/trace
+GET  /evidence/{id}
+```
+Each query returns answer, citations, plan version, trace ID. Report reused vs executed node counts, and retrieval time separately from generation time.
+
+SDK target:
+```python
+session = runtime.session(scope="demo_corpus")
+first = await session.ask("Compare AWS and Azure DR")
+nxt = await session.ask("Replace Azure with GCP")
+print(nxt.trace.reused_nodes, nxt.trace.executed_nodes)
+```
+
+## 12. Build Phases
+1. **Deterministic core** — frozen corpus with stable source IDs + version hashes; typed operators; DAG executor; hand-authored plans. Test: full vs incremental execution yield identical artifacts.
+2. **Retrieval adapters** — BM25 + dense on a shared source-span representation; doc-tree adapter; fusion kept separate (depends explicitly on both candidate lists); versioned index snapshots.
+3. **NL revisions** — structured-output intent compiler (entity replace / add constraint / change dimension), schema-validated; build subqueries from intent slots, not free LLM rewrites.
+4. **Correctness & DX** — provenance, permissions, freshness, eviction, fallback, trace UI, Python SDK.
+
+### Minimum acceptance tests
+- Identical query reuses valid artifacts
+- Unrelated query triggers new execution
+- Changed entity invalidates only dependent branches
+- Stricter constraint triggers retrieval when coverage is inadequate
+- Changed source and revoked permission prevent stale reuse
+- Late results from superseded requests cannot be committed
+
+## 13. Evaluation (DeltaBench)
+- 200–500 revision sequences with gold intent slots, evidence spans, expected answer changes; human-validate a subset; held-out split by topic/document family.
+- **Baselines:** full re-execution (same planner), exact operator cache, semantic cache, conversational hybrid RAG, vectorless tree, agentic/local-repair.
+- **Data sources:** QReCC / TREC CAsT, FinanceBench, HotpotQA / MuSiQue (not native revision benchmarks — construct and validate revision sequences).
+- **Metrics:** answer accuracy, evidence recall, citation support, stale-reuse rate, retrieval ops, tokens, P50/P95 latency, storage overhead; split by revision type and cold/warm cache.
+- **Ablations:** canonicalization, dependency propagation, sufficiency checks, source-version checks.
+- **Protocol:** fix corpus, model, budgets, hardware, concurrency; repeated trials with uncertainty intervals; compare quality at matched cost and cost at matched quality.
+- **Hypotheses (not results):** ≥25% lower retrieval latency on revision-heavy workloads, ≤1 pp accuracy loss, near-zero stale reuse.
+
+## 14. Risks & Mitigations
+| Risk | Mitigation |
+|---|---|
+| False reuse | Conservative signatures, sufficiency checks, full-execution fallback |
+| Planning overhead | Lightweight templates; measure compiler cost |
+| Stale data | Snapshots, TTLs, version checks |
+| Prompt injection | Retrieved text is data; validate tool calls; authorization outside the model |
+| Cache growth | Tenant-scoped quotas and eviction |
+| Gains are just caching | Go/no-go gate (below) |
+
+## 15. Voice Extension (post-MVP, optional)
+Streaming ASR partials → speculative branches, cancellation on revision, retained compatible evidence, claim gate holding unsupported factual speech. Extra constraints: partial transcripts/ASR uncertainty, strict deadlines, barge-in, audio can't be retracted. Not a prerequisite.
+
+## 16. Prior Art to Verify Before Claiming Novelty
+PageIndex, Self-RAG (2310.11511), Adaptive-RAG (2403.14403), GraphRAG (2404.16130), RAPTOR (2401.18059), PlanRAG / Doctor-RAG / LedgerRAG (verify exact papers), database incremental view maintenance, semantic caches. Underlying techniques are established; the contribution is their evaluated application to evolving NL retrieval plans with explicit sufficiency + provenance.
+
+## 17. Schedule (6 weeks, indicative)
+| Week | Goal |
+|---|---|
+| 1 | Corpus, baselines, typed DAG |
+| 2 | Lexical/dense adapters, artifact signatures |
+| 3 | Revision compiler, incremental execution |
+| 4 | Tree adapter, validity checks, trace UI |
+| 5 | Benchmark + baseline comparisons |
+| 6 | Ablations, failure analysis, paper draft |
+
+## 18. Go / No-Go
+Proceed to a paper **only if** the engine beats exact operator caching on meaningful revision workloads with preserved quality. If gains are all plain caching, or compiler overhead dominates, narrow the claim or pivot to **evidence sufficiency** as the contribution.
+
+## 19. Implementation Decisions Log
+**Phase 1 (deterministic core)**
+- Signature excludes the plan-local node id; includes operator version, freshness policy and output contract in addition to the §7 fields (conservative: more fields → fewer false hits).
+- `Evidence.created_at` is bookkeeping, not identity: `evidence_id` hashes every other field. `artifact_hash` = hash(output contract, ordered evidence ids).
+- BM25 canonical query = sorted set of tokens. Scoring depends only on that set, so differently phrased queries with the same token set are *provably* the same computation (exact, not similarity-based).
+- A deterministic `merge` operator (dedup-concat in declared input order) stands in for the compare/join node until fusion (Phase 2) and extraction exist. It is not rank fusion.
+- Reuse requires a signature hit *and* a validator pass (scope, snapshot, index/model version, inputs). Any mismatch re-executes.
+- Store is insert-only (UPDATE blocked by triggers). Re-storing a signature with different content raises `DeterminismViolation`, so every `reuse=False` run on a populated store doubles as a determinism check. DELETE stays allowed for future eviction.
+- Plans may not mix access scopes across edges; BM25 filters on exact scope equality (fail closed).
