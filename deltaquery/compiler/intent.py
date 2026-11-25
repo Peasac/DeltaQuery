@@ -94,3 +94,20 @@ def intent_json_schema(entities: Iterable[str]) -> dict[str, Any]:
     schema = Intent.model_json_schema()
     schema["properties"]["entities"]["items"] = {"enum": sorted(entities)}
     return schema
+
+
+def render_question(intent: Intent) -> str:
+    """Self-contained question text built from the intent (no LLM). Revisions like
+    "Replace Azure with GCP" are not questions on their own; this is."""
+    names = ", ".join(intent.entities)
+    topics = ", ".join(d.value.replace("_", " ") for d in intent.dimensions)
+    verb = "Compare" if intent.task is Task.COMPARE else "Describe"
+    q = f"{verb} {names} on: {topics}."
+    if intent.constraints:
+        cons = "; ".join(
+            f"{c.attribute.value.upper()} {'=' if c.op is Comparison.EQ else '<='} "
+            f"{c.value_seconds} seconds"
+            for c in intent.constraints
+        )
+        q += f" Requirements: {cons}."
+    return q

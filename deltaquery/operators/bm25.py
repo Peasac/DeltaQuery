@@ -86,11 +86,19 @@ class BM25Index:
         )
 
     def search(
-        self, query: str, *, top_k: int, entity: str | None, access_scope: str
+        self,
+        query: str,
+        *,
+        top_k: int,
+        entity: str | None,
+        access_scope: str,
+        exclude_sources: frozenset[str] = frozenset(),
     ) -> list[tuple[Passage, float]]:
         terms = sorted(set(tokenize(query)))
         scored: list[tuple[Passage, float]] = []
-        for i, p in self.passages.candidates(entity=entity, access_scope=access_scope):
+        for i, p in self.passages.candidates(
+            entity=entity, access_scope=access_scope, exclude_sources=exclude_sources
+        ):
             tf = self._tf[i]
             norm = self.k1 * (1 - self.b + self.b * self._len[i] / self._avgdl)
             score = 0.0
@@ -126,7 +134,11 @@ class BM25Operator(Operator[BM25Params]):
         self, params: BM25Params, inputs: Sequence[Artifact], ctx: ExecutionContext
     ) -> Sequence[Evidence]:
         hits = self.index.search(
-            params.query, top_k=params.top_k, entity=params.entity, access_scope=ctx.access_scope
+            params.query,
+            top_k=params.top_k,
+            entity=params.entity,
+            access_scope=ctx.access_scope,
+            exclude_sources=ctx.excluded_sources,
         )
         return [
             passage_evidence(p, score=s, coverage=CoverageType.LEXICAL, ctx=ctx) for p, s in hits

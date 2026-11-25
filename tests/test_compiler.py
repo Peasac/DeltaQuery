@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from conftest import SCOPE, TickClock
+from conftest import PRINCIPAL, SCOPE, TickClock, make_policy
 from pydantic import ValidationError
 from test_acceptance import content
 
@@ -157,7 +157,8 @@ def _session(index: BM25Index, dense_index: DenseIndex, llm: Any) -> Session:
     store = EvidenceStore()
     ops = [BM25Operator(index), DenseOperator(dense_index), RRFOperator(), MergeOperator()]
     planner = Planner(PlannerConfig(bm25=index, dense=dense_index, access_scope=SCOPE))
-    return Session(IntentCompiler(llm, ENTITIES), planner, Executor(store, ops, clock=TickClock()))
+    executor = Executor(store, ops, make_policy(), clock=TickClock())
+    return Session(IntentCompiler(llm, ENTITIES), planner, executor, principal=PRINCIPAL)
 
 
 def _branch(entity: str, slot: str) -> set[str]:

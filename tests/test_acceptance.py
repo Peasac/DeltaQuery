@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from conftest import Rig, make_rig, plan_compare, retrieve
+from conftest import PRINCIPAL, Rig, make_rig, plan_compare, retrieve
 
 from deltaquery.evidence.models import Artifact
 from deltaquery.operators.bm25 import BM25Index
@@ -37,9 +37,9 @@ def test_identical_query_reuses_all_artifacts(rig: Rig, index: BM25Index) -> Non
     q1 = plan_compare(index, "AWS", "Azure")
 
     async def scenario() -> tuple[ExecutionResult, ExecutionResult, int, int]:
-        first = await rig.executor.execute(q1)
+        first = await rig.executor.execute(q1, principal=PRINCIPAL)
         n1 = await rig.store.count_artifacts()
-        second = await rig.executor.execute(q1)
+        second = await rig.executor.execute(q1, principal=PRINCIPAL)
         n2 = await rig.store.count_artifacts()
         return first, second, n1, n2
 
@@ -65,7 +65,9 @@ def test_equivalent_phrasing_reuses_exactly(rig: Rig, index: BM25Index) -> None:
     )
 
     async def scenario() -> tuple[ExecutionResult, ExecutionResult]:
-        return await rig.executor.execute(a), await rig.executor.execute(b)
+        return await rig.executor.execute(a, principal=PRINCIPAL), await rig.executor.execute(
+            b, principal=PRINCIPAL
+        )
 
     ra, rb = run(scenario())
     assert ra.executed == {"A"} and rb.reused == {"A"}
@@ -76,8 +78,8 @@ def test_unrelated_query_executes(rig: Rig, index: BM25Index) -> None:
     other = plan_compare(index, "AWS", "Azure", query="encryption keys at rest")
 
     async def scenario() -> ExecutionResult:
-        await rig.executor.execute(q1)
-        return await rig.executor.execute(other)
+        await rig.executor.execute(q1, principal=PRINCIPAL)
+        return await rig.executor.execute(other, principal=PRINCIPAL)
 
     r = run(scenario())
     assert r.reused == set()
@@ -89,8 +91,8 @@ def test_changed_entity_invalidates_only_dependent_nodes(rig: Rig, index: BM25In
     q2 = plan_compare(index, "AWS", "GCP")  # A=aws, C=gcp,   D=merge(A,C)
 
     async def scenario() -> tuple[ExecutionResult, ExecutionResult, Artifact | None]:
-        r1 = await rig.executor.execute(q1)
-        r2 = await rig.executor.execute(q2)
+        r1 = await rig.executor.execute(q1, principal=PRINCIPAL)
+        r2 = await rig.executor.execute(q2, principal=PRINCIPAL)
         old_d = await rig.store.get_artifact(r1.artifacts["D"].signature)
         return r1, r2, old_d
 
@@ -121,12 +123,14 @@ def test_full_and_incremental_execution_give_identical_artifacts(index: BM25Inde
     incremental, full = make_rig(index), make_rig(index)
 
     async def scenario() -> tuple[ExecutionResult, ExecutionResult, ExecutionResult]:
-        await incremental.executor.execute(q1)
-        inc = await incremental.executor.execute(q2)  # reuses A
-        ful = await full.executor.execute(q2, reuse=False)  # fresh store, everything runs
+        await incremental.executor.execute(q1, principal=PRINCIPAL)
+        inc = await incremental.executor.execute(q2, principal=PRINCIPAL)  # reuses A
+        ful = await full.executor.execute(
+            q2, reuse=False, principal=PRINCIPAL
+        )  # fresh store, everything runs
         # Full re-execution on the *populated* store must agree with what is stored,
         # otherwise the store raises DeterminismViolation.
-        again = await incremental.executor.execute(q2, reuse=False)
+        again = await incremental.executor.execute(q2, reuse=False, principal=PRINCIPAL)
         return inc, ful, again
 
     inc, ful, again = run(scenario())
@@ -141,8 +145,8 @@ def test_full_and_incremental_execution_give_identical_artifacts(index: BM25Inde
 
 def test_trace_records_status_per_node(rig: Rig, index: BM25Index) -> None:
     async def scenario() -> ExecutionResult:
-        await rig.executor.execute(plan_compare(index, "AWS", "Azure"))
-        return await rig.executor.execute(plan_compare(index, "AWS", "GCP"))
+        await rig.executor.execute(plan_compare(index, "AWS", "Azure"), principal=PRINCIPAL)
+        return await rig.executor.execute(plan_compare(index, "AWS", "GCP"), principal=PRINCIPAL)
 
     r = run(scenario())
     status = {t.node_id: t.status for t in r.trace}

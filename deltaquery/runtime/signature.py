@@ -2,7 +2,7 @@
 
 signature = H(operator, operator version, canonical params, ordered input artifact hashes,
               source snapshot, index version, model version, access scope,
-              freshness policy, output contract)
+              access-policy version, freshness policy + max age, output contract)
 
 The plan-local node id is deliberately excluded, so the same computation is recognized across
 plans. Inputs are kept in declared order (operators may be order-sensitive).
@@ -16,7 +16,12 @@ from deltaquery.canonical import hash_canonical
 from deltaquery.runtime.models import Node
 
 
-def node_signature(node: Node, operator_version: str, input_artifact_hashes: Sequence[str]) -> str:
+def node_signature(
+    node: Node,
+    operator_version: str,
+    input_artifact_hashes: Sequence[str],
+    access_policy_version: str,
+) -> str:
     return hash_canonical(
         "node",
         {
@@ -28,7 +33,9 @@ def node_signature(node: Node, operator_version: str, input_artifact_hashes: Seq
             "index_version": node.index_version,
             "model_version": node.model_version,
             "access_scope": node.access_scope,
+            "access_policy_version": access_policy_version,
             "freshness_policy": node.freshness_policy.value,
+            "max_age_s": node.max_age_s,
             "output_contract": node.output_contract,
         },
     )

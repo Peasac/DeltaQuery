@@ -14,6 +14,7 @@ from typing import Any
 
 import pytest
 
+from deltaquery.evidence.access import AccessPolicy
 from deltaquery.evidence.corpus import Corpus, PassageSet
 from deltaquery.evidence.models import Artifact
 from deltaquery.evidence.store import EvidenceStore
@@ -29,6 +30,7 @@ from deltaquery.runtime.models import Node, Plan
 CORPUS_PATH = Path(__file__).parent / "fixtures" / "corpus.json"
 DR_QUERY = "disaster recovery failover RPO RTO"
 SCOPE = "demo"
+PRINCIPAL = "tester"
 
 
 class Counted:
@@ -112,7 +114,16 @@ def make_rig(index: BM25Index, dense_index: DenseIndex | None = None, *extra: Op
     ops: list[Operator[Any]] = [bm25, rrf, merge, *extra]
     if dense is not None:
         ops.append(dense)
-    return Rig(store, bm25, dense, rrf, merge, Executor(store, ops, clock=TickClock()))
+    return Rig(
+        store, bm25, dense, rrf, merge, Executor(store, ops, make_policy(), clock=TickClock())
+    )
+
+
+def make_policy() -> AccessPolicy:
+    policy = AccessPolicy()
+    policy.grant(PRINCIPAL, SCOPE)
+    policy.grant(PRINCIPAL, "restricted")
+    return policy
 
 
 @pytest.fixture

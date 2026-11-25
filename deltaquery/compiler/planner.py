@@ -12,13 +12,15 @@ retrieving is the conservative choice.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from typing import Any
 
 from deltaquery.compiler.intent import Attribute, Dimension, Intent
 from deltaquery.operators.bm25 import BM25Index, BM25Params
 from deltaquery.operators.dense import DenseIndex, DenseParams
 from deltaquery.operators.fusion import RRFParams
-from deltaquery.runtime.models import Node, Plan
+from deltaquery.runtime.models import FreshnessPolicy, Node, Plan
 
 PLANNER_VERSION = "hybrid-template-v1"
 
@@ -44,6 +46,9 @@ class PlannerConfig:
     candidates_k: int = 5
     fused_k: int = 3
     rrf_k: int = 60
+    # Retrieval for these dimensions expires after N seconds even on an unchanged snapshot
+    # (prices go stale outside our corpus versioning).
+    ttl_s: Mapping[Dimension, int] = field(default_factory=lambda: {Dimension.PRICING: 24 * 3600})
 
 
 def _slug(s: str) -> str:
@@ -54,9 +59,19 @@ class Planner:
     def __init__(self, config: PlannerConfig) -> None:
         self.c = config
 
-    def _retrieval(self, base: str, entity: str, query: str) -> list[Node]:
+    def _retrieval(
+        self, base: str, entity: str, query: str, max_age_s: int | None = None
+    ) -> list[Node]:
         c = self.c
-        common = {"access_scope": c.access_scope, "output_contract": "ranked_passages"}
+        common: dict[str, Any] = {
+            "access_scope": c.access_scope,
+            "output_contract": "ranked_passages",
+        }
+        fresh: dict[str, Any] = (
+            {"freshness_policy": FreshnessPolicy.TTL, "max_age_s": max_age_s}
+            if max_age_s is not None
+            else {}
+        )
         lex = Node(
             id=f"{base}__lex",
             operator="bm25",
@@ -67,6 +82,7 @@ class Planner:
             index_version=c.bm25.version,
             model_version=None,
             **common,
+            **fresh,
         )
         dense = Node(
             id=f"{base}__dense",
@@ -78,6 +94,7 @@ class Planner:
             index_version=c.dense.version,
             model_version=c.dense.model_version,
             **common,
+            **fresh,
         )
         fused = Node(
             id=base,
@@ -113,7 +130,9 @@ class Planner:
             branches: list[str] = []
             for dim in intent.dimensions:
                 base = f"{e}__{dim.value}"
-                nodes += self._retrieval(base, entity, DIMENSION_QUERIES[dim])
+                nodes += self._retrieval(
+                    base, entity, DIMENSION_QUERIES[dim], self.c.ttl_s.get(dim)
+                )
                 branches.append(base)
             for attr in attributes:
                 base = f"{e}__{attr.value}"

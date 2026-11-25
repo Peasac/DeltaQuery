@@ -86,6 +86,7 @@ class Artifact(BaseModel):
     operator_version: str
     output_contract: str
     access_scope: str
+    access_policy_version: str
     source_snapshot: str | None
     index_version: str | None
     model_version: str | None

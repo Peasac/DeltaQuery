@@ -7,7 +7,7 @@ import sqlite3
 from typing import Any
 
 import pytest
-from conftest import CORPUS_PATH, SCOPE, Rig, make_rig, merge, plan_compare, retrieve
+from conftest import CORPUS_PATH, PRINCIPAL, SCOPE, Rig, make_rig, merge, plan_compare, retrieve
 
 from deltaquery.canonical import (
     CanonicalizationError,
@@ -58,16 +58,16 @@ def test_entity_normalization() -> None:
 
 def test_signature_depends_on_every_versioned_field(index: BM25Index) -> None:
     base = retrieve("A", index, "aws")
-    sig = node_signature(base, "1", [])
-    assert node_signature(base.model_copy(update={"id": "Z"}), "1", []) == sig  # id excluded
+    sig = node_signature(base, "1", [], "pv")
+    assert node_signature(base.model_copy(update={"id": "Z"}), "1", [], "pv") == sig  # id excluded
     variants = [
-        node_signature(base, "2", []),
-        node_signature(base, "1", ["deadbeef"]),
-        node_signature(base.model_copy(update={"access_scope": "other"}), "1", []),
-        node_signature(base.model_copy(update={"source_snapshot": "s2"}), "1", []),
-        node_signature(base.model_copy(update={"index_version": "i2"}), "1", []),
-        node_signature(base.model_copy(update={"model_version": "m"}), "1", []),
-        node_signature(retrieve("A", index, "aws", top_k=4), "1", []),
+        node_signature(base, "2", [], "pv"),
+        node_signature(base, "1", ["deadbeef"], "pv"),
+        node_signature(base.model_copy(update={"access_scope": "other"}), "1", [], "pv"),
+        node_signature(base.model_copy(update={"source_snapshot": "s2"}), "1", [], "pv"),
+        node_signature(base.model_copy(update={"index_version": "i2"}), "1", [], "pv"),
+        node_signature(base.model_copy(update={"model_version": "m"}), "1", [], "pv"),
+        node_signature(retrieve("A", index, "aws", top_k=4), "1", [], "pv"),
     ]
     assert sig not in variants and len(set(variants)) == len(variants)
 
@@ -118,7 +118,7 @@ def test_node_declaring_stale_index_is_rejected(index: BM25Index) -> None:
     rig = make_rig(new_index)  # operator bound to the new snapshot
     stale = plan_compare(index, "aws", "azure")  # plan written against the old snapshot
     with pytest.raises(PlanValidationError, match="versions"):
-        run(rig.executor.execute(stale))
+        run(rig.executor.execute(stale, principal=PRINCIPAL))
 
 
 # -- access scope -------------------------------------------------------------------------
@@ -126,10 +126,10 @@ def test_node_declaring_stale_index_is_rejected(index: BM25Index) -> None:
 
 def test_bm25_never_returns_other_scope(rig: Rig, index: BM25Index) -> None:
     plan = Plan(nodes=(retrieve("A", index, "aws", top_k=20),), output_id="A")
-    r = run(rig.executor.execute(plan))
+    r = run(rig.executor.execute(plan, principal=PRINCIPAL))
     assert "aws-internal-runbook" not in {e.source_id for e in r.output.evidence}
     restricted = Plan(nodes=(retrieve("A", index, "aws", scope="restricted"),), output_id="A")
-    r2 = run(rig.executor.execute(restricted))
+    r2 = run(rig.executor.execute(restricted, principal=PRINCIPAL))
     assert r2.executed == {"A"}  # different scope never reuses
     assert {e.source_id for e in r2.output.evidence} == {"aws-internal-runbook"}
 
@@ -139,7 +139,7 @@ def test_bm25_never_returns_other_scope(rig: Rig, index: BM25Index) -> None:
 
 def _first_artifact(rig: Rig, index: BM25Index) -> Artifact:
     plan = Plan(nodes=(retrieve("A", index, "aws"),), output_id="A")
-    return run(rig.executor.execute(plan)).output  # type: ignore[no-any-return]
+    return run(rig.executor.execute(plan, principal=PRINCIPAL)).output  # type: ignore[no-any-return]
 
 
 def test_store_roundtrip_preserves_content(rig: Rig, index: BM25Index) -> None:
@@ -156,7 +156,8 @@ def test_store_rows_are_immutable(rig: Rig, index: BM25Index) -> None:
         conn.execute("UPDATE evidence SET score = '0.0'")
     with pytest.raises(sqlite3.IntegrityError, match="immutable"):
         conn.execute(
-            "UPDATE artifacts SET artifact_hash = 'x' WHERE signature = ?", (art.signature,)
+            "UPDATE artifacts SET artifact_hash = 'x' WHERE signature = ?",
+            (art.signature,),
         )
 
 

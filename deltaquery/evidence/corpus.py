@@ -113,10 +113,17 @@ class PassageSet:
             "passages", {"snapshot": self.source_snapshot, "chunker": CHUNKER_VERSION}
         )
 
-    def candidates(self, *, entity: str | None, access_scope: str) -> Iterator[tuple[int, Passage]]:
-        """Passages visible in `access_scope` (exact match, fail closed), optionally by entity."""
+    def candidates(
+        self,
+        *,
+        entity: str | None,
+        access_scope: str,
+        exclude_sources: frozenset[str] = frozenset(),
+    ) -> Iterator[tuple[int, Passage]]:
+        """Passages visible in `access_scope` (exact match, fail closed), minus revoked
+        sources, optionally restricted to one entity."""
         for i, p in enumerate(self.passages):
-            if p.access_scope != access_scope:
+            if p.access_scope != access_scope or p.source_id in exclude_sources:
                 continue
             if entity is not None and p.entity != entity:
                 continue

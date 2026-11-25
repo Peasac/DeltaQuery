@@ -13,6 +13,8 @@ _FROZEN = ConfigDict(frozen=True, extra="forbid")
 class FreshnessPolicy(StrEnum):
     # Valid exactly as long as the declared source snapshot / index version are current.
     SNAPSHOT = "snapshot"
+    # Additionally expires `max_age_s` after the content was last computed or re-verified.
+    TTL = "ttl"
 
 
 class Node(BaseModel):
@@ -27,7 +29,14 @@ class Node(BaseModel):
     model_version: str | None
     access_scope: str = Field(min_length=1)
     freshness_policy: FreshnessPolicy = FreshnessPolicy.SNAPSHOT
+    max_age_s: int | None = Field(default=None, gt=0)
     output_contract: str
+
+    @model_validator(mode="after")
+    def _freshness(self) -> Self:
+        if (self.freshness_policy is FreshnessPolicy.TTL) != (self.max_age_s is not None):
+            raise ValueError("max_age_s is required for, and only for, the ttl policy")
+        return self
 
 
 class PlanValidationError(ValueError):

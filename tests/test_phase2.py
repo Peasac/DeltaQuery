@@ -9,10 +9,12 @@ from typing import Any
 import pytest
 from conftest import (
     CORPUS_PATH,
+    PRINCIPAL,
     SCOPE,
     Rig,
     TickClock,
     dense,
+    make_policy,
     make_rig,
     plan_hybrid,
 )
@@ -39,7 +41,9 @@ def run(coro: Any) -> Any:
 
 def twice(rig: Rig, p1: Plan, p2: Plan) -> tuple[ExecutionResult, ExecutionResult]:
     async def go() -> tuple[ExecutionResult, ExecutionResult]:
-        return await rig.executor.execute(p1), await rig.executor.execute(p2)
+        return await rig.executor.execute(p1, principal=PRINCIPAL), await rig.executor.execute(
+            p2, principal=PRINCIPAL
+        )
 
     return run(go())  # type: ignore[no-any-return]
 
@@ -50,7 +54,9 @@ def twice(rig: Rig, p1: Plan, p2: Plan) -> tuple[ExecutionResult, ExecutionResul
 def test_lexical_and_dense_evidence_share_span_format(
     rig: Rig, index: BM25Index, dense_index: DenseIndex, passages: PassageSet
 ) -> None:
-    r = run(rig.executor.execute(plan_hybrid(index, dense_index, "aws", "azure")))
+    r = run(
+        rig.executor.execute(plan_hybrid(index, dense_index, "aws", "azure"), principal=PRINCIPAL)
+    )
     lex, den = r.artifacts["A_lex"].evidence, r.artifacts["A_dense"].evidence
     assert {e.coverage_type for e in lex} == {CoverageType.LEXICAL}
     assert {e.coverage_type for e in den} == {CoverageType.DENSE}
@@ -108,10 +114,12 @@ def test_hybrid_full_equals_incremental(index: BM25Index, dense_index: DenseInde
     inc_rig, full_rig = make_rig(index, dense_index), make_rig(index, dense_index)
 
     async def go() -> tuple[ExecutionResult, ExecutionResult, ExecutionResult]:
-        await inc_rig.executor.execute(q1)
-        inc = await inc_rig.executor.execute(q2)
-        ful = await full_rig.executor.execute(q2, reuse=False)
-        again = await inc_rig.executor.execute(q2, reuse=False)  # DeterminismViolation if not
+        await inc_rig.executor.execute(q1, principal=PRINCIPAL)
+        inc = await inc_rig.executor.execute(q2, principal=PRINCIPAL)
+        ful = await full_rig.executor.execute(q2, reuse=False, principal=PRINCIPAL)
+        again = await inc_rig.executor.execute(
+            q2, reuse=False, principal=PRINCIPAL
+        )  # DeterminismViolation if not
         return inc, ful, again
 
     inc, ful, again = run(go())
@@ -131,9 +139,13 @@ def test_dense_query_canonicalization_is_conservative(
         return Plan(nodes=(dense("X", dense_index, "aws", query=q),), output_id="X")
 
     async def go() -> tuple[ExecutionResult, ...]:
-        a = await rig.executor.execute(p("disaster  recovery\nRPO"))
-        b = await rig.executor.execute(p(" disaster recovery RPO "))  # whitespace only
-        c = await rig.executor.execute(p("Disaster Recovery RPO"))  # case: not assumed equal
+        a = await rig.executor.execute(p("disaster  recovery\nRPO"), principal=PRINCIPAL)
+        b = await rig.executor.execute(
+            p(" disaster recovery RPO "), principal=PRINCIPAL
+        )  # whitespace only
+        c = await rig.executor.execute(
+            p("Disaster Recovery RPO"), principal=PRINCIPAL
+        )  # case: not assumed equal
         return a, b, c
 
     a, b, c = run(go())
@@ -187,6 +199,7 @@ def _art(sig: str, *ev: Evidence, contract: str = "ranked_passages") -> Artifact
         operator_version="1",
         output_contract=contract,
         access_scope=SCOPE,
+        access_policy_version="pv",
         source_snapshot="s",
         index_version="i",
         model_version=None,
@@ -248,6 +261,7 @@ def test_source_update_blocks_stale_reuse_and_keeps_old_snapshot(
             RRFOperator(),
             MergeOperator(),
         ],
+        make_policy(),
         clock=TickClock(),
     )
     old_q = plan_hybrid(index, dense_index, "aws", "gcp")
@@ -255,9 +269,9 @@ def test_source_update_blocks_stale_reuse_and_keeps_old_snapshot(
 
     async def go() -> tuple[ExecutionResult, ExecutionResult, ExecutionResult]:
         return (
-            await ex.execute(old_q),
-            await ex.execute(new_q),
-            await ex.execute(old_q),
+            await ex.execute(old_q, principal=PRINCIPAL),
+            await ex.execute(new_q, principal=PRINCIPAL),
+            await ex.execute(old_q, principal=PRINCIPAL),
         )
 
     r_old, r_new, r_old_again = run(go())
@@ -278,9 +292,11 @@ def test_plan_for_unregistered_snapshot_fails_closed(
     ps2 = PassageSet(_updated_corpus())
     rig = make_rig(BM25Index(ps2), run(DenseIndex.build(ps2, HashingEmbedder())))
     with pytest.raises(PlanValidationError, match="versions"):
-        run(rig.executor.execute(plan_hybrid(index, dense_index, "aws", "gcp")))
+        run(
+            rig.executor.execute(plan_hybrid(index, dense_index, "aws", "gcp"), principal=PRINCIPAL)
+        )
 
 
 def test_duplicate_operator_registration_rejected(index: BM25Index) -> None:
     with pytest.raises(ValueError, match="duplicate"):
-        Executor(EvidenceStore(), [BM25Operator(index), BM25Operator(index)])
+        Executor(EvidenceStore(), [BM25Operator(index), BM25Operator(index)], make_policy())

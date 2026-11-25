@@ -22,6 +22,7 @@ class ExecutionContext:
     signature: str  # signature of the node being executed
     access_scope: str
     now: datetime
+    excluded_sources: frozenset[str] = frozenset()  # revoked in this scope; never return
 
 
 @dataclass(frozen=True)

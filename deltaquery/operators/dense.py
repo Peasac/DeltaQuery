@@ -93,13 +93,21 @@ class DenseIndex:
         return cls(passages, embedder, check_vectors(raw, count=len(texts), dim=embedder.dim))
 
     async def search(
-        self, query: str, *, top_k: int, entity: str | None, access_scope: str
+        self,
+        query: str,
+        *,
+        top_k: int,
+        entity: str | None,
+        access_scope: str,
+        exclude_sources: frozenset[str] = frozenset(),
     ) -> list[tuple[Passage, float]]:
         raw = await self.embedder.embed([query])
         (q,) = check_vectors(raw, count=1, dim=self.embedder.dim)
         scored = [
             (p, _dot(q, self._vectors[i]))
-            for i, p in self.passages.candidates(entity=entity, access_scope=access_scope)
+            for i, p in self.passages.candidates(
+                entity=entity, access_scope=access_scope, exclude_sources=exclude_sources
+            )
         ]
         return rank(scored, top_k)
 
@@ -127,6 +135,10 @@ class DenseOperator(Operator[DenseParams]):
         self, params: DenseParams, inputs: Sequence[Artifact], ctx: ExecutionContext
     ) -> Sequence[Evidence]:
         hits = await self.index.search(
-            params.query, top_k=params.top_k, entity=params.entity, access_scope=ctx.access_scope
+            params.query,
+            top_k=params.top_k,
+            entity=params.entity,
+            access_scope=ctx.access_scope,
+            exclude_sources=ctx.excluded_sources,
         )
         return [passage_evidence(p, score=s, coverage=CoverageType.DENSE, ctx=ctx) for p, s in hits]

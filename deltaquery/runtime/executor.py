@@ -4,6 +4,10 @@ For each topological layer, independent nodes are resolved concurrently:
     compute signature from (node, operator version, input artifact hashes)
     -> look up artifact -> validate -> reuse, or execute (with timeout) and store.
 
+Access: the principal must hold every scope in the plan (checked before anything runs); the
+scope's access-policy version is part of each signature; revoked sources are excluded from
+retrieval, re-checked on every reuse, and asserted absent from every new artifact.
+
 `reuse=False` is full re-execution with the same planner. It still writes to the store, and the
 store raises DeterminismViolation if a signature ever yields different content.
 """
@@ -17,12 +21,13 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
+from deltaquery.evidence.access import AccessDenied, AccessPolicy
 from deltaquery.evidence.models import Artifact, compute_artifact_hash
 from deltaquery.evidence.store import EvidenceStore
 from deltaquery.operators.base import BoundVersions, ExecutionContext, Operator
-from deltaquery.runtime.models import Node, Plan, PlanValidationError
+from deltaquery.runtime.models import FreshnessPolicy, Node, Plan, PlanValidationError
 from deltaquery.runtime.signature import node_signature
-from deltaquery.runtime.validate import reuse_rejection_reason
+from deltaquery.runtime.validate import ReuseContext, reuse_rejection_reason
 
 
 class NodeStatus(StrEnum):
@@ -68,6 +73,12 @@ def operator_key(name: str, v: BoundVersions) -> OperatorKey:
     return (name, v.source_snapshot, v.index_version, v.model_version)
 
 
+@dataclass(frozen=True)
+class _ScopeView:
+    version: str
+    revoked: frozenset[str]
+
+
 def _utcnow() -> datetime:
     return datetime.now(UTC)
 
@@ -77,6 +88,7 @@ class Executor:
         self,
         store: EvidenceStore,
         operators: Iterable[Operator[Any]],
+        policy: AccessPolicy,
         *,
         node_timeout_s: float = 30.0,
         clock: Callable[[], datetime] = _utcnow,
@@ -92,6 +104,7 @@ class Executor:
             self._registry[key] = op
         self._names = {k[0] for k in self._registry}
         self.store = store
+        self.policy = policy
         self.node_timeout_s = node_timeout_s
         self.clock = clock
 
@@ -121,13 +134,27 @@ class Executor:
             except ValueError as exc:
                 raise PlanValidationError(f"node {n.id!r}: {exc}") from exc
 
-    async def execute(self, plan: Plan, *, reuse: bool = True) -> ExecutionResult:
+    async def execute(self, plan: Plan, *, principal: str, reuse: bool = True) -> ExecutionResult:
+        """Execute `plan` on behalf of `principal`. Fails closed (AccessDenied) before any
+        reuse or execution if the principal may not read every scope the plan touches."""
         self.check_plan(plan)
+        scopes = {n.access_scope for n in plan.nodes}
+        for scope in sorted(scopes):
+            self.policy.check(principal, scope)
+        # One consistent view of the policy for the whole plan.
+        views = {
+            s: _ScopeView(self.policy.version(s), self.policy.revoked_sources(s)) for s in scopes
+        }
         artifacts: dict[str, Artifact] = {}
         traces: list[NodeTrace] = []
         for layer in plan.layers():
             async with asyncio.TaskGroup() as tg:
-                tasks = [tg.create_task(self._resolve(n, artifacts, reuse)) for n in layer]
+                tasks = [
+                    tg.create_task(
+                        self._resolve(n, artifacts, views[n.access_scope], principal, reuse)
+                    )
+                    for n in layer
+                ]
             for node, task in zip(layer, tasks, strict=True):
                 artifact, trace = task.result()
                 artifacts[node.id] = artifact
@@ -135,32 +162,65 @@ class Executor:
         return ExecutionResult(plan=plan, artifacts=artifacts, trace=tuple(traces))
 
     async def _resolve(
-        self, node: Node, done: Mapping[str, Artifact], reuse: bool
+        self,
+        node: Node,
+        done: Mapping[str, Artifact],
+        view: _ScopeView,
+        principal: str,
+        reuse: bool,
     ) -> tuple[Artifact, NodeTrace]:
         op = self.operator_for(node)
         inputs = [done[i] for i in node.input_ids]
-        sig = node_signature(node, op.version, [a.artifact_hash for a in inputs])
+        sig = node_signature(node, op.version, [a.artifact_hash for a in inputs], view.version)
 
         rejected: str | None = None
         if reuse:
-            cached = await self.store.get_artifact(sig)
+            try:
+                cached = await self.store.get_artifact(sig)
+            except ValueError:  # stored manifest fails its integrity check
+                cached, rejected = None, "corrupt"
             if cached is not None:
-                rejected = reuse_rejection_reason(node, op, sig, inputs, cached)
+                now = self.clock()
+                last_verified = (
+                    await self.store.last_verified_at(sig)
+                    if node.freshness_policy is FreshnessPolicy.TTL
+                    else None
+                )
+                rctx = ReuseContext(
+                    signature=sig,
+                    inputs=inputs,
+                    access_policy_version=view.version,
+                    revoked_sources=view.revoked,
+                    principal_may_read=self.policy.can_read(principal, node.access_scope),
+                    now=now,
+                    last_verified_at=last_verified,
+                )
+                rejected = reuse_rejection_reason(node, op, cached, rctx)
                 if rejected is None:
+                    await self.store.touch(sig, now)
                     return cached, NodeTrace(node.id, node.operator, sig, NodeStatus.REUSED)
 
         params = op.parse_params(node.canonical_parameters)
         now = self.clock()
-        ctx = ExecutionContext(signature=sig, access_scope=node.access_scope, now=now)
+        ctx = ExecutionContext(
+            signature=sig,
+            access_scope=node.access_scope,
+            now=now,
+            excluded_sources=view.revoked,
+        )
         evidence = tuple(
             await asyncio.wait_for(op.run(params, inputs, ctx), timeout=self.node_timeout_s)
         )
+        leaked = {e.source_id for e in evidence} & view.revoked
+        if leaked:  # operator bug: never store or return revoked content
+            raise AccessDenied(f"node {node.id!r} returned revoked sources {sorted(leaked)}")
         artifact = Artifact(
             signature=sig,
             operator=op.name,
             operator_version=op.version,
             output_contract=op.output_contract,
             access_scope=node.access_scope,
+            access_policy_version=view.version,
             source_snapshot=node.source_snapshot,
             index_version=node.index_version,
             model_version=node.model_version,
