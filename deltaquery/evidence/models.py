@@ -39,6 +39,8 @@ class Span(BaseModel):
 
 class CoverageType(StrEnum):
     LEXICAL = "lexical"
+    DENSE = "dense"
+    FUSED = "fused"
 
 
 class Evidence(BaseModel):

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from functools import cached_property
 from pathlib import Path
 
@@ -99,3 +99,25 @@ class Corpus:
     def from_json(cls, path: Path) -> Corpus:
         raw = json.loads(path.read_text(encoding="utf-8"))
         return cls(SourceDocument.model_validate(item) for item in raw)
+
+
+class PassageSet:
+    """The shared span representation: every retriever over a corpus indexes exactly these
+    passages, so evidence for the same text has the same (source_id, source_version, span,
+    content_hash) regardless of which retriever found it."""
+
+    def __init__(self, corpus: Corpus) -> None:
+        self.source_snapshot = corpus.snapshot_id
+        self.passages: tuple[Passage, ...] = tuple(corpus.passages())
+        self.version = hash_canonical(
+            "passages", {"snapshot": self.source_snapshot, "chunker": CHUNKER_VERSION}
+        )
+
+    def candidates(self, *, entity: str | None, access_scope: str) -> Iterator[tuple[int, Passage]]:
+        """Passages visible in `access_scope` (exact match, fail closed), optionally by entity."""
+        for i, p in enumerate(self.passages):
+            if p.access_scope != access_scope:
+                continue
+            if entity is not None and p.entity != entity:
+                continue
+            yield i, p

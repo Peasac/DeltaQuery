@@ -11,7 +11,8 @@ from typing import Any, ClassVar, Generic, TypeVar
 from pydantic import BaseModel
 
 from deltaquery.canonical import canonicalize
-from deltaquery.evidence.models import Artifact, Evidence
+from deltaquery.evidence.corpus import Passage
+from deltaquery.evidence.models import Artifact, CoverageType, Evidence
 
 P = TypeVar("P", bound=BaseModel)
 
@@ -63,3 +64,28 @@ class Operator(ABC, Generic[P]):
     async def run(
         self, params: P, inputs: Sequence[Artifact], ctx: ExecutionContext
     ) -> Sequence[Evidence]: ...
+
+
+RANKED_PASSAGES = "ranked_passages"
+
+
+def passage_evidence(
+    passage: Passage, *, score: float, coverage: CoverageType, ctx: ExecutionContext
+) -> Evidence:
+    """Evidence in the shared span format, attributed to the executing node."""
+    return Evidence(
+        source_id=passage.source_id,
+        source_version=passage.source_version,
+        span=passage.span,
+        content_hash=passage.content_hash,
+        retrieval_node_id=ctx.signature,
+        score=score,
+        coverage_type=coverage,
+        created_at=ctx.now,
+    )
+
+
+def rank(scored: list[tuple[Passage, float]], top_k: int) -> list[tuple[Passage, float]]:
+    """Deterministic ranking: score desc, then (source_id, span start)."""
+    scored.sort(key=lambda ps: (-ps[1], ps[0].source_id, ps[0].span.start))
+    return scored[:top_k]

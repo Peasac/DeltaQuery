@@ -1,4 +1,4 @@
-"""Minimal deterministic BM25 over paragraph passages of a frozen corpus.
+"""Minimal deterministic BM25 over the shared passage set.
 
 Determinism: query terms are deduplicated and sorted before scoring (so float summation order
 is fixed), and ties are broken by (source_id, span start). Because scoring only depends on the
@@ -16,9 +16,16 @@ from collections.abc import Sequence
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from deltaquery.canonical import hash_canonical, normalize_entity_id
-from deltaquery.evidence.corpus import CHUNKER_VERSION, Corpus, Passage
+from deltaquery.evidence.corpus import Passage, PassageSet
 from deltaquery.evidence.models import Artifact, CoverageType, Evidence
-from deltaquery.operators.base import BoundVersions, ExecutionContext, Operator
+from deltaquery.operators.base import (
+    RANKED_PASSAGES,
+    BoundVersions,
+    ExecutionContext,
+    Operator,
+    passage_evidence,
+    rank,
+)
 
 TOKENIZER_VERSION = "casefold-alnum-v1"
 _TOKEN = re.compile(r"[a-z0-9]+")
@@ -54,26 +61,25 @@ class BM25Params(BaseModel):
 
 
 class BM25Index:
-    def __init__(self, corpus: Corpus, *, k1: float = 1.2, b: float = 0.75) -> None:
+    def __init__(self, passages: PassageSet, *, k1: float = 1.2, b: float = 0.75) -> None:
         self.k1 = k1
         self.b = b
-        self.snapshot_id = corpus.snapshot_id
-        self.passages: tuple[Passage, ...] = tuple(corpus.passages())
-        self._tf = [Counter(tokenize(p.text)) for p in self.passages]
+        self.passages = passages
+        self.snapshot_id = passages.source_snapshot
+        self._tf = [Counter(tokenize(p.text)) for p in passages.passages]
         self._len = [sum(tf.values()) for tf in self._tf]
         self._avgdl = (sum(self._len) / len(self._len)) if self._len else 0.0
         df: Counter[str] = Counter()
         for tf in self._tf:
             df.update(tf.keys())
-        n = len(self.passages)
+        n = len(self._tf)
         self._idf = {t: math.log((n - d + 0.5) / (d + 0.5) + 1.0) for t, d in df.items()}
         self.version = hash_canonical(
             "index",
             {
                 "kind": "bm25",
-                "snapshot": self.snapshot_id,
+                "passages": passages.version,
                 "tokenizer": TOKENIZER_VERSION,
-                "chunker": CHUNKER_VERSION,
                 "k1": k1,
                 "b": b,
             },
@@ -84,11 +90,7 @@ class BM25Index:
     ) -> list[tuple[Passage, float]]:
         terms = sorted(set(tokenize(query)))
         scored: list[tuple[Passage, float]] = []
-        for i, p in enumerate(self.passages):
-            if p.access_scope != access_scope:  # fail closed: exact scope match only
-                continue
-            if entity is not None and p.entity != entity:
-                continue
+        for i, p in self.passages.candidates(entity=entity, access_scope=access_scope):
             tf = self._tf[i]
             norm = self.k1 * (1 - self.b + self.b * self._len[i] / self._avgdl)
             score = 0.0
@@ -98,14 +100,13 @@ class BM25Index:
                     score += self._idf[t] * f * (self.k1 + 1) / (f + norm)
             if score > 0:
                 scored.append((p, score))
-        scored.sort(key=lambda ps: (-ps[1], ps[0].source_id, ps[0].span.start))
-        return scored[:top_k]
+        return rank(scored, top_k)
 
 
 class BM25Operator(Operator[BM25Params]):
     name = "bm25"
     version = "1"
-    output_contract = "ranked_passages"
+    output_contract = RANKED_PASSAGES
     params_model = BM25Params
     min_inputs = 0
     max_inputs = 0
@@ -128,15 +129,5 @@ class BM25Operator(Operator[BM25Params]):
             params.query, top_k=params.top_k, entity=params.entity, access_scope=ctx.access_scope
         )
         return [
-            Evidence(
-                source_id=p.source_id,
-                source_version=p.source_version,
-                span=p.span,
-                content_hash=p.content_hash,
-                retrieval_node_id=ctx.signature,
-                score=score,
-                coverage_type=CoverageType.LEXICAL,
-                created_at=ctx.now,
-            )
-            for p, score in hits
+            passage_evidence(p, score=s, coverage=CoverageType.LEXICAL, ctx=ctx) for p, s in hits
         ]

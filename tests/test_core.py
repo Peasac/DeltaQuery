@@ -15,7 +15,7 @@ from deltaquery.canonical import (
     hash_canonical,
     normalize_entity_id,
 )
-from deltaquery.evidence.corpus import Corpus, SourceDocument
+from deltaquery.evidence.corpus import Corpus, PassageSet, SourceDocument
 from deltaquery.evidence.models import Artifact, compute_artifact_hash
 from deltaquery.evidence.store import DeterminismViolation
 from deltaquery.operators.base import ParameterError
@@ -113,7 +113,7 @@ def test_node_declaring_stale_index_is_rejected(index: BM25Index) -> None:
             ),
         ]
     )
-    new_index = BM25Index(changed)
+    new_index = BM25Index(PassageSet(changed))
     assert new_index.snapshot_id != index.snapshot_id and new_index.version != index.version
     rig = make_rig(new_index)  # operator bound to the new snapshot
     stale = plan_compare(index, "aws", "azure")  # plan written against the old snapshot

@@ -11,7 +11,7 @@ store raises DeterminismViolation if a signature ever yields different content.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -19,7 +19,7 @@ from typing import Any
 
 from deltaquery.evidence.models import Artifact, compute_artifact_hash
 from deltaquery.evidence.store import EvidenceStore
-from deltaquery.operators.base import ExecutionContext, Operator
+from deltaquery.operators.base import BoundVersions, ExecutionContext, Operator
 from deltaquery.runtime.models import Node, Plan, PlanValidationError
 from deltaquery.runtime.signature import node_signature
 from deltaquery.runtime.validate import reuse_rejection_reason
@@ -61,6 +61,13 @@ class ExecutionResult:
         return self.ids_with(NodeStatus.REUSED)
 
 
+OperatorKey = tuple[str, str | None, str | None, str | None]
+
+
+def operator_key(name: str, v: BoundVersions) -> OperatorKey:
+    return (name, v.source_snapshot, v.index_version, v.model_version)
+
+
 def _utcnow() -> datetime:
     return datetime.now(UTC)
 
@@ -69,37 +76,46 @@ class Executor:
     def __init__(
         self,
         store: EvidenceStore,
-        operators: Mapping[str, Operator[Any]],
+        operators: Iterable[Operator[Any]],
         *,
         node_timeout_s: float = 30.0,
         clock: Callable[[], datetime] = _utcnow,
     ) -> None:
-        for name, op in operators.items():
-            if name != op.name:
-                raise ValueError(f"operator registered as {name!r} but named {op.name!r}")
+        # Versioned registry: the same operator name may be bound to several snapshots
+        # (e.g. old and new index after a source update). Nodes are routed by their
+        # declared versions; there is no "closest match".
+        self._registry: dict[OperatorKey, Operator[Any]] = {}
+        for op in operators:
+            key = operator_key(op.name, op.bound_versions)
+            if key in self._registry:
+                raise ValueError(f"duplicate operator registration: {key}")
+            self._registry[key] = op
+        self._names = {k[0] for k in self._registry}
         self.store = store
-        self.operators = dict(operators)
         self.node_timeout_s = node_timeout_s
         self.clock = clock
+
+    def operator_for(self, node: Node) -> Operator[Any]:
+        if node.operator not in self._names:
+            raise PlanValidationError(f"node {node.id!r}: unknown operator {node.operator!r}")
+        key = (node.operator, node.source_snapshot, node.index_version, node.model_version)
+        op = self._registry.get(key)
+        if op is None:
+            raise PlanValidationError(
+                f"node {node.id!r}: declared versions do not match any registered "
+                f"{node.operator!r} operator (snapshot/index/model not available)"
+            )
+        return op
 
     def check_plan(self, plan: Plan) -> None:
         """Static checks against the operator registry. Raises PlanValidationError."""
         for n in plan.nodes:
-            op = self.operators.get(n.operator)
-            if op is None:
-                raise PlanValidationError(f"node {n.id!r}: unknown operator {n.operator!r}")
+            op = self.operator_for(n)
             if n.output_contract != op.output_contract:
                 raise PlanValidationError(f"node {n.id!r}: output contract mismatch")
             k = len(n.input_ids)
             if k < op.min_inputs or (op.max_inputs is not None and k > op.max_inputs):
                 raise PlanValidationError(f"node {n.id!r}: bad input arity {k}")
-            bound = op.bound_versions
-            declared = (n.source_snapshot, n.index_version, n.model_version)
-            actual = (bound.source_snapshot, bound.index_version, bound.model_version)
-            if declared != actual:
-                raise PlanValidationError(
-                    f"node {n.id!r}: declared versions do not match the bound operator"
-                )
             try:
                 op.parse_params(n.canonical_parameters)
             except ValueError as exc:
@@ -121,7 +137,7 @@ class Executor:
     async def _resolve(
         self, node: Node, done: Mapping[str, Artifact], reuse: bool
     ) -> tuple[Artifact, NodeTrace]:
-        op = self.operators[node.operator]
+        op = self.operator_for(node)
         inputs = [done[i] for i in node.input_ids]
         sig = node_signature(node, op.version, [a.artifact_hash for a in inputs])
 

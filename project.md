@@ -186,3 +186,12 @@ Proceed to a paper **only if** the engine beats exact operator caching on meanin
 - Reuse requires a signature hit *and* a validator pass (scope, snapshot, index/model version, inputs). Any mismatch re-executes.
 - Store is insert-only (UPDATE blocked by triggers). Re-storing a signature with different content raises `DeterminismViolation`, so every `reuse=False` run on a populated store doubles as a determinism check. DELETE stays allowed for future eviction.
 - Plans may not mix access scopes across edges; BM25 filters on exact scope equality (fail closed).
+
+**Phase 2 (retrieval adapters)**
+- Shared span format = `PassageSet` (corpus snapshot + chunker version). BM25 and dense index exactly these passages, so evidence for the same text is byte-identical in (source_id, source_version, span, content_hash). Scope/entity filtering lives there too (exact scope match, fail closed).
+- Dense: vendor-neutral `Embedder` protocol; `model_version` is part of the index version and every dense signature. Exact cosine search (no FAISS yet): at fixture scale it is cheap and has no ANN approximation that could differ between full and incremental runs. FAISS/Qdrant later = new index version.
+- Tests use `HashingEmbedder` (char-trigram feature hashing): deterministic, offline, **not semantic**; never report it as a dense-model result. A real model (BGE) is not wired in yet.
+- Dense query canonicalization is only NFC + whitespace collapse (a real model may be case/punctuation sensitive). BM25 keeps the stronger token-set canonicalization because its scoring provably ignores order and case.
+- Fusion = RRF operator over ≥2 explicit `ranked_passages` inputs, summed in declared input order; emits new `fused` evidence rows (score and retrieval_node_id differ) on the same spans. Rejects inputs whose spans disagree on source_version/content_hash.
+- Versioned snapshots: the executor routes each node by (operator, source_snapshot, index_version, model_version); several snapshots may be registered at once. A plan naming an unregistered snapshot is rejected, never routed to the "closest" one. Invalidation is snapshot-level for now: any source change re-runs every retriever on the new snapshot (conservative; per-document invalidation is later work).
+- Note for real embedders: GPU/batch nondeterminism would surface as `DeterminismViolation` on re-execution. If that happens, dense must be treated as a statistically-evaluated operator (spec §7), not silently tolerated.
