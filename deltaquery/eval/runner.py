@@ -84,8 +84,9 @@ async def run_oracle(
     trials: int = 3,
     seed: int = 0,
     warm: bool = False,
+    planner_variant: str = "A",
 ) -> str:
-    env = await Env.create({0: world.corpus(0), 1: world.corpus(1)}, SCOPE)
+    env = await Env.create({0: world.corpus(0), 1: world.corpus(1)}, SCOPE, planner_variant)
     versions = _versions(env)
     chosen: list[System] = [s for s in all_systems(env) if systems is None or s.name in systems]
     run_id = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:6]
@@ -99,6 +100,8 @@ async def run_oracle(
         "n_sequences": len(sequences),
         "trials": trials,
         "warm": warm,
+        "planner_variant": planner_variant,
+        "splits": sorted({s.split for s in sequences}),
         "systems": [s.name for s in chosen],
     }
     with out_path.open("a", encoding="utf-8") as f:

@@ -38,7 +38,7 @@ from typing import Any, Protocol
 
 from deltaquery.canonical import hash_canonical
 from deltaquery.compiler.intent import Intent, render_question
-from deltaquery.compiler.planner import Planner, PlannerConfig
+from deltaquery.compiler.planner import PLANNER_VARIANTS, Planner, PlannerConfig
 from deltaquery.evidence.access import AccessPolicy
 from deltaquery.evidence.corpus import Corpus, PassageSet
 from deltaquery.evidence.models import Artifact, Evidence, compute_artifact_hash
@@ -76,16 +76,23 @@ class Env:
     embedder: HashingEmbedder = field(default_factory=HashingEmbedder)
 
     @classmethod
-    async def create(cls, corpora: dict[int, Corpus], scope: str) -> Env:
+    async def create(
+        cls, corpora: dict[int, Corpus], scope: str, planner_variant: str = "A"
+    ) -> Env:
+        overrides: dict[str, Any] = dict(PLANNER_VARIANTS[planner_variant])
         snaps: dict[int, Snapshot] = {}
         embedder = HashingEmbedder()
         for k, corpus in corpora.items():
             ps = PassageSet(corpus)
             bm25 = BM25Index(ps)
             dense = await DenseIndex.build(ps, embedder)
-            planner = Planner(PlannerConfig(bm25=bm25, dense=dense, access_scope=scope))
+            planner = Planner(
+                PlannerConfig(bm25=bm25, dense=dense, access_scope=scope, **overrides)
+            )
             always = Planner(
-                PlannerConfig(bm25=bm25, dense=dense, access_scope=scope, sufficiency=False)
+                PlannerConfig(
+                    bm25=bm25, dense=dense, access_scope=scope, sufficiency=False, **overrides
+                )
             )
             snaps[k] = Snapshot(corpus, ps, bm25, dense, planner, always)
         return cls(snaps, scope, embedder)

@@ -32,6 +32,23 @@ DIMENSION_QUERIES: dict[Dimension, str] = {
     Dimension.REGIONS: "regions zones availability",
     Dimension.ENCRYPTION: "encryption at rest keys",
 }
+# Planner v2 candidate (Phase 7, pre-registered): DR retrieval also names the recovery
+# objectives, which are core disaster-recovery concepts.
+DIMENSION_QUERIES_V2: dict[Dimension, str] = {
+    **DIMENSION_QUERIES,
+    Dimension.DISASTER_RECOVERY: (
+        "disaster recovery failover replication region "
+        "recovery point objective RPO recovery time objective RTO"
+    ),
+}
+
+# Pre-registered variants (project.md, Phase 7). Values are PlannerConfig overrides.
+PLANNER_VARIANTS: dict[str, dict[str, object]] = {
+    "A": {},
+    "B": {"dimension_queries": DIMENSION_QUERIES_V2},
+    "C": {"fused_k": 5},
+    "D": {"dimension_queries": DIMENSION_QUERIES_V2, "fused_k": 5},
+}
 ATTRIBUTE_QUERIES: dict[Attribute, str] = {
     Attribute.RPO: "recovery point objective RPO data loss replication",
     Attribute.RTO: "recovery time objective RTO downtime restore",
@@ -46,6 +63,9 @@ class PlannerConfig:
     access_scope: str
     candidates_k: int = 5
     fused_k: int = 3
+    dimension_queries: Mapping[Dimension, str] = field(
+        default_factory=lambda: dict(DIMENSION_QUERIES)
+    )
     rrf_k: int = 60
     # Retrieval for these dimensions expires after N seconds even on an unchanged snapshot
     # (prices go stale outside our corpus versioning).
@@ -156,7 +176,7 @@ class Planner:
             for dim in intent.dimensions:
                 base = f"{e}__{dim.value}"
                 nodes += self._retrieval(
-                    base, entity, DIMENSION_QUERIES[dim], self.c.ttl_s.get(dim)
+                    base, entity, self.c.dimension_queries[dim], self.c.ttl_s.get(dim)
                 )
                 branches.append(base)
             topic_branches = list(branches)

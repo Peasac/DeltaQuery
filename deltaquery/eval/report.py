@@ -91,7 +91,9 @@ def render(meta: dict[str, Any], rows: list[dict[str, Any]]) -> str:
     w(
         f"Dataset `{meta['dataset']}` (synthetic, world seed {meta['world_seed']}), "
         f"{meta['n_sequences']} sequences, {n_turns} turns per system per trial, "
-        f"{meta['trials']} trials, {'warm' if meta['warm'] else 'cold'} start per sequence. "
+        f"{meta['trials']} trials, {'warm' if meta['warm'] else 'cold'} start per sequence, "
+        f"planner variant {meta.get('planner_variant', 'A')}, "
+        f"splits {', '.join(meta.get('splits', ['dev', 'test']))}. "
         "Oracle-intent track: every system receives the gold intent, so differences are about "
         "reuse only. Latency is retrieval-side wall time on one machine; it includes each "
         "system's own bookkeeping (SQLite store for `deltaquery`/`full`, in-memory dicts for the "

@@ -60,6 +60,8 @@ def main() -> None:
     o.add_argument("--n", type=int, default=300)
     o.add_argument("--trials", type=int, default=3)
     o.add_argument("--warm", action="store_true")
+    o.add_argument("--planner", default="A", choices=["A", "B", "C", "D"])
+    o.add_argument("--split", default="all", choices=["all", "dev", "test"])
     o.add_argument("--systems", nargs="*")
     o.add_argument("--world-seed", type=int, default=7)
     o.add_argument("--seq-seed", type=int, default=11)
@@ -85,8 +87,18 @@ def main() -> None:
     RESULTS.mkdir(parents=True, exist_ok=True)
     if args.cmd == "oracle":
         log = RESULTS / ("oracle-warm.jsonl" if args.warm else "oracle.jsonl")
+        if args.split != "all":
+            seqs = [s for s in seqs if s.split == args.split]
         run_id = asyncio.run(
-            run_oracle(world, seqs, log, systems=args.systems, trials=args.trials, warm=args.warm)
+            run_oracle(
+                world,
+                seqs,
+                log,
+                systems=args.systems,
+                trials=args.trials,
+                warm=args.warm,
+                planner_variant=args.planner,
+            )
         )
     else:
         from deltaquery.llm.ollama import OllamaLLM
