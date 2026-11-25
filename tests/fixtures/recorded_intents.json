@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "note": "Structured outputs recorded from a live run; used offline by tests.",
+    "model": "ollama/qwen3.5:4b@d8b0f5e9760cd1682034f292d7ef72ec46f432149be0df7574bf2d6e92e38c04",
+    "prompt_version": "intent-v1",
+    "recorded_on": "2026-11-25"
+  },
+  "sequence": [
+    {"text": "Compare AWS and Azure disaster recovery",
+     "output": {"task": "compare", "entities": ["aws", "azure"], "dimensions": ["disaster_recovery"], "constraints": []}},
+    {"text": "Replace Azure with GCP",
+     "output": {"task": "compare", "entities": ["aws", "gcp"], "dimensions": ["disaster_recovery"], "constraints": []}},
+    {"text": "Only consider options with an RPO of zero",
+     "output": {"task": "compare", "entities": ["aws", "gcp"], "dimensions": ["disaster_recovery"], "constraints": [{"attribute": "rpo", "op": "eq", "value_seconds": 0}]}},
+    {"text": "Also compare pricing",
+     "output": {"task": "compare", "entities": ["aws", "gcp"], "dimensions": ["disaster_recovery", "pricing"], "constraints": [{"attribute": "rpo", "op": "eq", "value_seconds": 0}]}}
+  ]
+}
