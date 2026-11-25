@@ -61,6 +61,19 @@ class Operator(ABC, Generic[P]):
             raise ParameterError(f"{self.name}: parameters are not canonical: {raw!r}")
         return params  # type: ignore[return-value]
 
+    def access_dependencies(
+        self, params: P, access_scope: str, revoked: frozenset[str]
+    ) -> frozenset[str]:
+        """The revoked sources this node's *own* result can depend on.
+
+        Default: all of them (conservative). Operators that only transform their inputs return
+        frozenset(), since revocations reach them through input hashes. Retrievers return the
+        revoked sources inside their candidate domain. Under-reporting here would allow stale
+        reuse, so override only with a proof that excluded sources outside the returned set
+        cannot change the result.
+        """
+        return revoked
+
     @abstractmethod
     async def run(
         self, params: P, inputs: Sequence[Artifact], ctx: ExecutionContext

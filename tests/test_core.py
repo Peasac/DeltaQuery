@@ -178,3 +178,23 @@ def test_tampered_manifest_fails_hash_check(rig: Rig, index: BM25Index) -> None:
     art = _first_artifact(rig, index)
     with pytest.raises(ValueError, match="artifact_hash"):
         Artifact.model_validate({**art.model_dump(), "evidence": art.evidence[:1]})
+
+
+def test_memory_cache_and_buffered_touches(index: BM25Index) -> None:
+    from deltaquery.evidence.store import EvidenceStore
+
+    rig = make_rig(index)
+    plan = Plan(nodes=(retrieve("A", index, "aws"),), output_id="A")
+    art = run(rig.executor.execute(plan, principal=PRINCIPAL)).output
+    rig.store.clear_memory_cache()
+    loaded = run(rig.store.get_artifact(art.signature))
+    assert loaded == art and art.signature in rig.store._mem  # read-through filled the cache
+    run(rig.executor.execute(plan, principal=PRINCIPAL))  # reuse -> buffered touch
+    conn = rig.store._raw_connection_for_tests()
+    hits = lambda: conn.execute(  # noqa: E731
+        "SELECT hits FROM artifact_usage WHERE signature = ?", (art.signature,)
+    ).fetchone()[0]
+    assert hits() == 0  # buffered, not yet written
+    run(rig.store.flush())
+    assert hits() == 1
+    assert EvidenceStore(cache_size=0)._mem == {}

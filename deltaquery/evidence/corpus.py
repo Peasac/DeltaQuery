@@ -109,9 +109,23 @@ class PassageSet:
     def __init__(self, corpus: Corpus) -> None:
         self.source_snapshot = corpus.snapshot_id
         self.passages: tuple[Passage, ...] = tuple(corpus.passages())
+        self._domains: dict[tuple[str | None, str], frozenset[str]] = {}
         self.version = hash_canonical(
             "passages", {"snapshot": self.source_snapshot, "chunker": CHUNKER_VERSION}
         )
+
+    def domain_sources(self, *, entity: str | None, access_scope: str) -> frozenset[str]:
+        """Source ids a retriever filtered by (entity, scope) could ever return."""
+        key = (entity, access_scope)
+        cached = self._domains.get(key)
+        if cached is None:
+            cached = frozenset(
+                p.source_id
+                for p in self.passages
+                if p.access_scope == access_scope and (entity is None or p.entity == entity)
+            )
+            self._domains[key] = cached
+        return cached
 
     def candidates(
         self,

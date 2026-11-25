@@ -45,6 +45,11 @@ class RRFOperator(Operator[RRFParams]):
     def bound_versions(self) -> BoundVersions:
         return BoundVersions(source_snapshot=None, index_version=None, model_version=None)
 
+    def access_dependencies(
+        self, params: RRFParams, access_scope: str, revoked: frozenset[str]
+    ) -> frozenset[str]:
+        return frozenset()  # depends on revocations only through its inputs' hashes
+
     async def run(
         self, params: RRFParams, inputs: Sequence[Artifact], ctx: ExecutionContext
     ) -> Sequence[Evidence]:

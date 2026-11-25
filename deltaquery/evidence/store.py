@@ -20,6 +20,7 @@ import asyncio
 import json
 import sqlite3
 import threading
+from collections import OrderedDict
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -108,10 +109,50 @@ def _evidence_from_row(r: tuple[Any, ...]) -> Evidence:
 
 
 class EvidenceStore:
-    def __init__(self, path: str | Path = ":memory:") -> None:
+    """`cache_size` > 0 keeps a read-through LRU of artifacts in process. That is safe because
+    artifact rows are immutable: an entry can only go stale by eviction, which also purges it.
+    Entries come from validated writes or validated loads. Usage bookkeeping (touches) is
+    buffered and flushed in batches, before eviction, and on close."""
+
+    def __init__(
+        self, path: str | Path = ":memory:", *, cache_size: int = 4096, flush_every: int = 256
+    ) -> None:
         self._conn = sqlite3.connect(str(path), check_same_thread=False, isolation_level=None)
         self._lock = threading.Lock()
         self._conn.executescript(_SCHEMA)
+        self._cache_size = cache_size
+        self._flush_every = flush_every
+        self._mem: OrderedDict[str, Artifact] = OrderedDict()
+        self._verified: dict[str, datetime] = {}
+        self._pending: dict[str, tuple[datetime, int]] = {}  # signature -> (last use, hits)
+
+    def _remember(self, a: Artifact) -> None:
+        if self._cache_size <= 0:
+            return
+        self._mem[a.signature] = a
+        self._mem.move_to_end(a.signature)
+        while len(self._mem) > self._cache_size:
+            self._mem.popitem(last=False)
+
+    def clear_memory_cache(self) -> None:
+        """Drop in-process state (as after a restart). Pending touches are kept."""
+        self._mem.clear()
+        self._verified.clear()
+
+    async def flush(self) -> None:
+        """Write buffered usage bookkeeping to SQLite."""
+        if not self._pending:
+            return
+        batch, self._pending = self._pending, {}
+
+        def fn(c: sqlite3.Connection) -> None:
+            c.executemany(
+                "UPDATE artifact_usage SET last_used_at = max(last_used_at, ?),"
+                " hits = hits + ? WHERE signature = ?",
+                [(t.isoformat(), n, sig) for sig, (t, n) in batch.items()],
+            )
+
+        await self._run(fn)
 
     async def __aenter__(self) -> Self:
         return self
@@ -125,6 +166,7 @@ class EvidenceStore:
         await self.close()
 
     async def close(self) -> None:
+        await self.flush()
         await asyncio.to_thread(self._conn.close)
 
     async def _run(self, fn: Callable[[sqlite3.Connection], T]) -> T:
@@ -138,10 +180,15 @@ class EvidenceStore:
 
     async def put_artifact(self, artifact: Artifact) -> None:
         """Insert, or (same signature, same content) record a re-verification."""
-        await self._run(lambda c: self._put_artifact(c, artifact))
+        inserted = await self._run(lambda c: self._put_artifact(c, artifact))
+        when = artifact.created_at
+        prev = self._verified.get(artifact.signature)
+        self._verified[artifact.signature] = when if prev is None else max(prev, when)
+        if inserted:
+            self._remember(artifact)
 
     @staticmethod
-    def _put_artifact(conn: sqlite3.Connection, a: Artifact) -> None:
+    def _put_artifact(conn: sqlite3.Connection, a: Artifact) -> bool:
         cur = conn.cursor()
         now = a.created_at.isoformat()
         cur.execute("BEGIN IMMEDIATE")
@@ -160,7 +207,7 @@ class EvidenceStore:
                     (now, now, a.signature),
                 )
                 cur.execute("COMMIT")
-                return
+                return False
             for e in a.evidence:
                 cur.execute(
                     "INSERT OR IGNORE INTO evidence VALUES (?,?,?,?,?,?,?,?,?,?,?)",
@@ -207,25 +254,30 @@ class EvidenceStore:
         except BaseException:
             cur.execute("ROLLBACK")
             raise
+        return True
 
     async def touch(self, signature: str, now: datetime) -> None:
-        """Record a reuse (for LRU eviction)."""
-
-        def fn(c: sqlite3.Connection) -> None:
-            c.execute(
-                "UPDATE artifact_usage SET last_used_at = max(last_used_at, ?), hits = hits + 1"
-                " WHERE signature = ?",
-                (now.isoformat(), signature),
-            )
-
-        await self._run(fn)
+        """Record a reuse (for LRU eviction). Buffered; see flush()."""
+        prev = self._pending.get(signature)
+        self._pending[signature] = (now, 1) if prev is None else (max(prev[0], now), prev[1] + 1)
+        if signature in self._mem:
+            self._mem.move_to_end(signature)
+        if len(self._pending) >= self._flush_every:
+            await self.flush()
 
     # -- reads ----------------------------------------------------------------------------
 
     async def get_artifact(self, signature: str) -> Artifact | None:
         """Load an artifact. The model re-verifies artifact_hash against stored evidence and
         raises ValueError if they disagree (corruption)."""
-        return await self._run(lambda c: self._get_artifact(c, signature))
+        hit = self._mem.get(signature)
+        if hit is not None:
+            self._mem.move_to_end(signature)
+            return hit
+        art = await self._run(lambda c: self._get_artifact(c, signature))
+        if art is not None:
+            self._remember(art)
+        return art
 
     @staticmethod
     def _get_artifact(conn: sqlite3.Connection, signature: str) -> Artifact | None:
@@ -264,6 +316,9 @@ class EvidenceStore:
         )
 
     async def last_verified_at(self, signature: str) -> datetime | None:
+        if signature in self._verified:
+            return self._verified[signature]
+
         def fn(c: sqlite3.Connection) -> datetime | None:
             row = c.execute(
                 "SELECT last_verified_at FROM artifact_usage WHERE signature = ?", (signature,)
@@ -336,6 +391,8 @@ class EvidenceStore:
         evidence no artifact references. Returns the number of artifacts evicted."""
         if max_artifacts < 0:
             raise ValueError("max_artifacts must be >= 0")
+        await self.flush()  # LRU order must include buffered uses
+        evicted: list[str] = []
 
         def fn(c: sqlite3.Connection) -> int:
             cur = c.cursor()
@@ -369,9 +426,14 @@ class EvidenceStore:
             except BaseException:
                 cur.execute("ROLLBACK")
                 raise
+            evicted.extend(victims)
             return len(victims)
 
-        return await self._run(fn)
+        n = await self._run(fn)
+        for sig in evicted:
+            self._mem.pop(sig, None)
+            self._verified.pop(sig, None)
+        return n
 
     def _raw_connection_for_tests(self) -> sqlite3.Connection:
         return self._conn

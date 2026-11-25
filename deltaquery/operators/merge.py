@@ -31,6 +31,11 @@ class MergeOperator(Operator[MergeParams]):
         # Depends on sources only through its inputs, whose hashes are in the signature.
         return BoundVersions(source_snapshot=None, index_version=None, model_version=None)
 
+    def access_dependencies(
+        self, params: MergeParams, access_scope: str, revoked: frozenset[str]
+    ) -> frozenset[str]:
+        return frozenset()  # depends on revocations only through its inputs' hashes
+
     async def run(
         self, params: MergeParams, inputs: Sequence[Artifact], ctx: ExecutionContext
     ) -> Sequence[Evidence]:

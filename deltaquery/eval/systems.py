@@ -17,6 +17,8 @@ Ablations of deltaquery (same cache machinery as the exact baselines, keys toggl
 - abl_no_deps      key without input content (no dependency propagation)
 - abl_no_versions  = exact_naive + policy version (versions dropped)
 - abl_no_policy    = exact_versioned (policy dropped); listed for the ablation table
+- dq_coarse_policy deltaquery with whole-scope policy versions in signatures (pre-lever-1)
+- dq_no_memcache   deltaquery without the in-process artifact cache (pre-lever-2)
 
 Every cache-based system executes fresh work under the *current* policy (revoked sources are
 excluded at retrieval). Stale results can therefore only come from reuse.
@@ -121,21 +123,33 @@ def new_policy(scope: str) -> AccessPolicy:
 
 
 class DeltaQuerySystem:
-    def __init__(self, env: Env, *, reuse: bool = True, name: str = "deltaquery") -> None:
+    def __init__(
+        self,
+        env: Env,
+        *,
+        reuse: bool = True,
+        name: str = "deltaquery",
+        precise_access: bool = True,
+        cache_size: int = 4096,
+    ) -> None:
         self.env = env
         self.reuse = reuse
         self.name = name
+        self.precise_access = precise_access
+        self.cache_size = cache_size
         self._store: EvidenceStore | None = None
 
     async def reset(self) -> None:
         if self._store is not None:
             await self._store.close()
-        self._store = EvidenceStore(":memory:")
+        self._store = EvidenceStore(":memory:", cache_size=self.cache_size)
 
     async def turn(self, intent: Intent, state: WorldState) -> TurnOutcome:
         assert self._store is not None
         plan = self.env.snapshots[state.snapshot].planner.build(intent)
-        ex = Executor(self._store, self.env.operators(), state.policy)
+        ex = Executor(
+            self._store, self.env.operators(), state.policy, precise_access=self.precise_access
+        )
         t0 = time.perf_counter()
         r = await ex.execute(plan, principal=PRINCIPAL, reuse=self.reuse)
         dt = time.perf_counter() - t0
@@ -156,7 +170,9 @@ class DeltaQuerySystem:
 class CacheKeyConfig:
     inputs: bool = True  # input artifact content hashes
     versions: bool = True  # snapshot / index / model versions
-    policy: bool = False  # access-policy version of the scope
+    # "none": access policy not in the key; "scope": the scope's whole policy version;
+    # "precise": only the revocations the operator's own result can depend on.
+    policy: str = "none"
 
 
 def _registry(ops: Sequence[Operator[Any]]) -> dict[tuple[Any, ...], Operator[Any]]:
@@ -192,8 +208,15 @@ async def run_plan_cached(
             key_parts["inputs"] = [a.artifact_hash for a in inputs]
         if cfg.versions:
             key_parts["versions"] = [node.source_snapshot, node.index_version, node.model_version]
-        if cfg.policy:
+        if cfg.policy == "scope":
             key_parts["policy"] = policy.version(node.access_scope)
+        elif cfg.policy == "precise":
+            deps = op.access_dependencies(
+                op.parse_params(node.canonical_parameters),
+                node.access_scope,
+                policy.revoked_sources(node.access_scope),
+            )
+            key_parts["policy"] = sorted(deps)
         key = hash_canonical("bench-cache", key_parts)
         hit = cache.get(key) if cache is not None else None
         if hit is not None:
@@ -360,13 +383,19 @@ def all_systems(env: Env) -> list[System]:
     return [
         DeltaQuerySystem(env),
         DeltaQuerySystem(env, reuse=False, name="full"),
+        DeltaQuerySystem(env, name="dq_coarse_policy", precise_access=False),
+        DeltaQuerySystem(env, name="dq_no_memcache", cache_size=0),
         CacheSystem(env, "exact_naive", CacheKeyConfig(inputs=True, versions=False)),
         CacheSystem(env, "exact_versioned", CacheKeyConfig(inputs=True, versions=True)),
         SemanticCacheSystem(env, 0.95),
         ConversationalHybridSystem(env),
-        CacheSystem(env, "abl_no_deps", CacheKeyConfig(inputs=False, versions=True, policy=True)),
         CacheSystem(
-            env, "abl_no_versions", CacheKeyConfig(inputs=True, versions=False, policy=True)
+            env, "abl_no_deps", CacheKeyConfig(inputs=False, versions=True, policy="precise")
         ),
-        CacheSystem(env, "abl_dq_keys", CacheKeyConfig(inputs=True, versions=True, policy=True)),
+        CacheSystem(
+            env, "abl_no_versions", CacheKeyConfig(inputs=True, versions=False, policy="precise")
+        ),
+        CacheSystem(
+            env, "abl_dq_keys", CacheKeyConfig(inputs=True, versions=True, policy="precise")
+        ),
     ]

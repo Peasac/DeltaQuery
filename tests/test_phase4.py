@@ -18,6 +18,7 @@ from conftest import (
     Rig,
     TickClock,
     make_policy,
+    make_rig,
     plan_hybrid,
     retrieve,
 )
@@ -107,10 +108,63 @@ def test_source_revocation_blocks_stale_reuse_and_restoration_reuses(
 
     r1, r2, r3 = run(go())
     assert "aws-dr-rpo" in sources(r1)
-    assert r2.reused == set()  # policy version changed: nothing in the scope is reusable
     assert "aws-dr-rpo" not in sources(r2)
-    assert r3.executed == set()  # same policy as r1 again
+    # Precise invalidation: only the branch whose candidate domain contains the revoked
+    # source (AWS retrievers) and its dependents re-run; the GCP branch is reused.
+    assert r2.reused == {"C_lex", "C_dense", "C"}
+    assert r2.executed == {"A_lex", "A_dense", "A", "D"}
+    assert r3.executed == set()  # same revocations as r1 again
     assert content(r3.output) == content(r1.output)
+
+
+def test_precise_revocation_matches_full_reexecution(
+    index: BM25Index, dense_index: DenseIndex
+) -> None:
+    """Safety of precise invalidation: after any revocation, incremental results equal a full
+    re-execution under the same policy, node by node."""
+    plan = plan_hybrid(index, dense_index, "aws", "gcp")
+    for revoked in ["aws-dr-rpo", "gcp-dr-overview", "azure-dr-rpo", "aws-pricing"]:
+        inc, full = make_rig(index, dense_index), make_rig(index, dense_index)
+
+        async def go(inc: Rig, full: Rig, src: str) -> tuple[ExecutionResult, ExecutionResult]:
+            await inc.executor.execute(plan, principal=PRINCIPAL)
+            inc.executor.policy.revoke_source(SCOPE, src)
+            full.executor.policy.revoke_source(SCOPE, src)
+            return (
+                await inc.executor.execute(plan, principal=PRINCIPAL),
+                await full.executor.execute(plan, principal=PRINCIPAL, reuse=False),
+            )
+
+        r_inc, r_full = run(go(inc, full, revoked))
+        for n in plan.nodes:
+            assert [e.identity() for e in r_inc.artifacts[n.id].evidence] == [
+                e.identity() for e in r_full.artifacts[n.id].evidence
+            ], (revoked, n.id)
+
+
+def test_coarse_mode_invalidates_whole_scope(index: BM25Index, dense_index: DenseIndex) -> None:
+    rig = make_rig(index, dense_index)
+    rig.executor.precise_access = False
+    plan = plan_hybrid(index, dense_index, "aws", "gcp")
+
+    async def go() -> ExecutionResult:
+        await rig.executor.execute(plan, principal=PRINCIPAL)
+        rig.executor.policy.revoke_source(SCOPE, "aws-dr-rpo")
+        return await rig.executor.execute(plan, principal=PRINCIPAL)
+
+    assert run(go()).reused == set()
+
+
+def test_unknown_operators_default_to_all_revocations(index: BM25Index) -> None:
+    from deltaquery.operators.base import Operator
+
+    class Custom(BM25Operator):
+        access_dependencies = Operator.access_dependencies  # type: ignore[assignment]
+
+    revoked = frozenset({"x", "y"})
+    params = BM25Operator(index).parse_params(retrieve("A", index, "aws").canonical_parameters)
+    assert Custom(index).access_dependencies(params, SCOPE, revoked) == revoked
+    assert BM25Operator(index).access_dependencies(params, SCOPE, revoked) == frozenset()
 
 
 def test_validator_reauthorizes_even_on_signature_hit(rig: Rig, index: BM25Index) -> None:
@@ -267,6 +321,10 @@ def test_corrupt_artifact_falls_back_to_recompute(rig: Rig, index: BM25Index) ->
     conn = rig.store._raw_connection_for_tests()
     conn.execute("DROP TRIGGER evidence_immutable")
     conn.execute("UPDATE evidence SET span_end = span_end + 1")  # simulate disk corruption
+    # A validated in-process copy is still served (disk corruption cannot reach it)...
+    assert run(rig.executor.execute(plan, principal=PRINCIPAL)).reused == {"A"}
+    # ...but after a restart the corrupt row is detected and recomputed.
+    rig.store.clear_memory_cache()
     r2 = run(rig.executor.execute(plan, principal=PRINCIPAL))
     assert r2.executed == {"A"} and [t.reuse_rejected for t in r2.trace] == ["corrupt"]
     assert content(r2.output) == content(r1.output)
@@ -444,3 +502,26 @@ def test_sdk_session_flow() -> None:
 def test_nodes_status_enum_is_stable() -> None:
     # The trace format is consumed by the (upcoming) UI; keep the wire values fixed.
     assert [s.value for s in NodeStatus] == ["executed", "reused"]
+
+
+def test_restoring_a_source_recomputes_affected_branch(
+    index: BM25Index, dense_index: DenseIndex
+) -> None:
+    """The other direction: an artifact computed while a source was revoked must not be
+    reused after the source is restored (it would silently miss evidence)."""
+    plan = plan_hybrid(index, dense_index, "aws", "gcp")
+    inc, full = make_rig(index, dense_index), make_rig(index, dense_index)
+
+    async def go() -> tuple[ExecutionResult, ExecutionResult]:
+        inc.executor.policy.revoke_source(SCOPE, "aws-dr-rpo")
+        await inc.executor.execute(plan, principal=PRINCIPAL)
+        inc.executor.policy.restore_source(SCOPE, "aws-dr-rpo")
+        return (
+            await inc.executor.execute(plan, principal=PRINCIPAL),
+            await full.executor.execute(plan, principal=PRINCIPAL, reuse=False),
+        )
+
+    r_inc, r_full = run(go())
+    assert {"A_lex", "A_dense"} <= r_inc.executed
+    assert content(r_inc.output) == content(r_full.output)
+    assert "aws-dr-rpo" in sources(r_inc)

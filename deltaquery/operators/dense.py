@@ -131,6 +131,15 @@ class DenseOperator(Operator[DenseParams]):
             model_version=self.index.model_version,
         )
 
+    def access_dependencies(
+        self, params: DenseParams, access_scope: str, revoked: frozenset[str]
+    ) -> frozenset[str]:
+        # A passage's score does not depend on which other passages are excluded
+        # (cosine against a fixed query vector), so only revocations inside the filtered
+        # domain can change the top-k.
+        domain = self.index.passages.domain_sources(entity=params.entity, access_scope=access_scope)
+        return revoked & domain
+
     async def run(
         self, params: DenseParams, inputs: Sequence[Artifact], ctx: ExecutionContext
     ) -> Sequence[Evidence]:

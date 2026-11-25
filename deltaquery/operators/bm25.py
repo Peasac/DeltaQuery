@@ -130,6 +130,15 @@ class BM25Operator(Operator[BM25Params]):
             model_version=None,
         )
 
+    def access_dependencies(
+        self, params: BM25Params, access_scope: str, revoked: frozenset[str]
+    ) -> frozenset[str]:
+        # A passage's score does not depend on which other passages are excluded (IDF and
+        # length stats are over the whole passage set), so only revocations inside the
+        # filtered domain can change the top-k.
+        domain = self.index.passages.domain_sources(entity=params.entity, access_scope=access_scope)
+        return revoked & domain
+
     async def run(
         self, params: BM25Params, inputs: Sequence[Artifact], ctx: ExecutionContext
     ) -> Sequence[Evidence]:

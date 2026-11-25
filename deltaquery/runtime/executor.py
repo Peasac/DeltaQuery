@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
+from deltaquery.canonical import hash_canonical
 from deltaquery.evidence.access import AccessDenied, AccessPolicy
 from deltaquery.evidence.models import Artifact, compute_artifact_hash
 from deltaquery.evidence.store import EvidenceStore
@@ -73,6 +74,11 @@ def operator_key(name: str, v: BoundVersions) -> OperatorKey:
     return (name, v.source_snapshot, v.index_version, v.model_version)
 
 
+def access_fingerprint(scope: str, revoked: frozenset[str]) -> str:
+    """Same formula as AccessPolicy.version, so the coarse mode reproduces it exactly."""
+    return hash_canonical("access", {"scope": scope, "revoked": sorted(revoked)})
+
+
 @dataclass(frozen=True)
 class _ScopeView:
     version: str
@@ -92,6 +98,7 @@ class Executor:
         *,
         node_timeout_s: float = 30.0,
         clock: Callable[[], datetime] = _utcnow,
+        precise_access: bool = True,
     ) -> None:
         # Versioned registry: the same operator name may be bound to several snapshots
         # (e.g. old and new index after a source update). Nodes are routed by their
@@ -105,6 +112,10 @@ class Executor:
         self._names = {k[0] for k in self._registry}
         self.store = store
         self.policy = policy
+        # precise_access: a node's signature carries only the revocations its own result can
+        # depend on (Operator.access_dependencies). False = the whole scope's policy version
+        # (coarse; any revocation invalidates every artifact in the scope).
+        self.precise_access = precise_access
         self.node_timeout_s = node_timeout_s
         self.clock = clock
 
@@ -171,7 +182,14 @@ class Executor:
     ) -> tuple[Artifact, NodeTrace]:
         op = self.operator_for(node)
         inputs = [done[i] for i in node.input_ids]
-        sig = node_signature(node, op.version, [a.artifact_hash for a in inputs], view.version)
+        params = op.parse_params(node.canonical_parameters)
+        deps = (
+            op.access_dependencies(params, node.access_scope, view.revoked)
+            if self.precise_access
+            else view.revoked
+        )
+        access_fp = access_fingerprint(node.access_scope, deps)
+        sig = node_signature(node, op.version, [a.artifact_hash for a in inputs], access_fp)
 
         rejected: str | None = None
         if reuse:
@@ -189,7 +207,7 @@ class Executor:
                 rctx = ReuseContext(
                     signature=sig,
                     inputs=inputs,
-                    access_policy_version=view.version,
+                    access_policy_version=access_fp,
                     revoked_sources=view.revoked,
                     principal_may_read=self.policy.can_read(principal, node.access_scope),
                     now=now,
@@ -200,7 +218,6 @@ class Executor:
                     await self.store.touch(sig, now)
                     return cached, NodeTrace(node.id, node.operator, sig, NodeStatus.REUSED)
 
-        params = op.parse_params(node.canonical_parameters)
         now = self.clock()
         ctx = ExecutionContext(
             signature=sig,
@@ -220,7 +237,7 @@ class Executor:
             operator_version=op.version,
             output_contract=op.output_contract,
             access_scope=node.access_scope,
-            access_policy_version=view.version,
+            access_policy_version=access_fp,
             source_snapshot=node.source_snapshot,
             index_version=node.index_version,
             model_version=node.model_version,
