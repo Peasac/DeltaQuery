@@ -282,6 +282,19 @@ class EvidenceStore:
 
         return await self._run(fn)
 
+    async def scopes_for_evidence(self, evidence_id: str) -> frozenset[str]:
+        """Access scopes of the artifacts that reference this evidence (for authorization)."""
+
+        def fn(c: sqlite3.Connection) -> frozenset[str]:
+            rows = c.execute(
+                "SELECT DISTINCT a.access_scope FROM artifact_evidence ae"
+                " JOIN artifacts a ON a.signature = ae.signature WHERE ae.evidence_id = ?",
+                (evidence_id,),
+            ).fetchall()
+            return frozenset(r[0] for r in rows)
+
+        return await self._run(fn)
+
     async def lineage(self, signature: str) -> dict[str, Artifact | None]:
         """Provenance: the artifact and all its transitive inputs, inputs first.
         Evicted (or never stored) ancestors map to None."""
