@@ -1,0 +1,25 @@
+{
+  "dataset": "deltabench-synth-v1",
+  "world_seed": 7,
+  "sequence_seed": 11,
+  "n_sequences": 300,
+  "changed_entities_v1": [
+    "delmora",
+    "delwick",
+    "esvell",
+    "galnix",
+    "istris",
+    "jorbryn",
+    "luwick",
+    "pelbryn",
+    "quindor",
+    "rostris",
+    "uldor",
+    "zeltris"
+  ],
+  "sha256": {
+    "corpus_v0.json": "0c7125f7066c1598c64b930d3d041a9f2ba83d1ad5c7d8be5e353f1433eddd0e",
+    "corpus_v1.json": "8a7d6cd59735f0d652c23b303a8a8e4221b68acb81ec68853b2791fdbf489196",
+    "sequences.jsonl": "c15f6cbe7c5db3661d66e6a8a171a4b4dd8e237cfb3d2870dc073287a9639bf1"
+  }
+}

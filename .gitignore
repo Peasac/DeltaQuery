@@ -6,3 +6,6 @@ __pycache__/
 .ruff_cache/
 *.sqlite3
 *.db
+
+# DeltaBench raw logs (large; regenerate with python -m deltaquery.eval)
+results/**/*.jsonl

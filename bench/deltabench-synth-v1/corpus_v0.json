@@ -1,0 +1,1402 @@
+[
+ {
+  "source_id": "ardor-backup",
+  "entity": "ardor",
+  "title": "Ardor backup",
+  "text": "Ardor backup overview.\n\nArdor backup vaults keep snapshots for 90 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ardor-disaster-recovery",
+  "entity": "ardor",
+  "title": "Ardor disaster recovery",
+  "text": "Ardor disaster recovery overview. Ardor replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Ardor RPO is 15 seconds of data loss at most.\n\nRecovery time objective (RTO): Ardor restores service within 300 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ardor-encryption",
+  "entity": "ardor",
+  "title": "Ardor encryption",
+  "text": "Ardor encryption overview.\n\nArdor encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ardor-pricing",
+  "entity": "ardor",
+  "title": "Ardor pricing",
+  "text": "Ardor pricing overview for replication and standby capacity.\n\nArdor bills cross-region replication at $0.04 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ardor-regions",
+  "entity": "ardor",
+  "title": "Ardor regions",
+  "text": "Ardor regions overview.\n\nArdor operates 9 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "arthas-backup",
+  "entity": "arthas",
+  "title": "Arthas backup",
+  "text": "Arthas backup overview.\n\nArthas backup vaults keep snapshots for 30 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "arthas-disaster-recovery",
+  "entity": "arthas",
+  "title": "Arthas disaster recovery",
+  "text": "Arthas disaster recovery overview. Arthas replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Arthas RPO is 5 seconds of data loss at most.\n\nRecovery time objective (RTO): Arthas restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "arthas-encryption",
+  "entity": "arthas",
+  "title": "Arthas encryption",
+  "text": "Arthas encryption overview.\n\nArthas encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "arthas-pricing",
+  "entity": "arthas",
+  "title": "Arthas pricing",
+  "text": "Arthas pricing overview for replication and standby capacity.\n\nArthas bills cross-region replication at $0.09 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "arthas-regions",
+  "entity": "arthas",
+  "title": "Arthas regions",
+  "text": "Arthas regions overview.\n\nArthas operates 9 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delmora-backup",
+  "entity": "delmora",
+  "title": "Delmora backup",
+  "text": "Delmora backup overview.\n\nDelmora backup vaults keep snapshots for 30 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delmora-disaster-recovery",
+  "entity": "delmora",
+  "title": "Delmora disaster recovery",
+  "text": "Delmora disaster recovery overview. Delmora replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Delmora RPO is 30 seconds of data loss at most.\n\nRecovery time objective (RTO): Delmora restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delmora-encryption",
+  "entity": "delmora",
+  "title": "Delmora encryption",
+  "text": "Delmora encryption overview.\n\nDelmora encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delmora-pricing",
+  "entity": "delmora",
+  "title": "Delmora pricing",
+  "text": "Delmora pricing overview for replication and standby capacity.\n\nDelmora bills cross-region replication at $0.08 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delmora-regions",
+  "entity": "delmora",
+  "title": "Delmora regions",
+  "text": "Delmora regions overview.\n\nDelmora operates 4 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delwick-backup",
+  "entity": "delwick",
+  "title": "Delwick backup",
+  "text": "Delwick backup overview.\n\nDelwick backup vaults keep snapshots for 90 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delwick-disaster-recovery",
+  "entity": "delwick",
+  "title": "Delwick disaster recovery",
+  "text": "Delwick disaster recovery overview. Delwick replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Delwick RPO is 30 seconds of data loss at most.\n\nRecovery time objective (RTO): Delwick restores service within 3600 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delwick-encryption",
+  "entity": "delwick",
+  "title": "Delwick encryption",
+  "text": "Delwick encryption overview.\n\nDelwick encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delwick-pricing",
+  "entity": "delwick",
+  "title": "Delwick pricing",
+  "text": "Delwick pricing overview for replication and standby capacity.\n\nDelwick bills cross-region replication at $0.07 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "delwick-regions",
+  "entity": "delwick",
+  "title": "Delwick regions",
+  "text": "Delwick regions overview.\n\nDelwick operates 9 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esbryn-backup",
+  "entity": "esbryn",
+  "title": "Esbryn backup",
+  "text": "Esbryn backup overview.\n\nEsbryn backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esbryn-disaster-recovery",
+  "entity": "esbryn",
+  "title": "Esbryn disaster recovery",
+  "text": "Esbryn disaster recovery overview. Esbryn replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Esbryn RPO is 15 seconds of data loss at most.\n\nRecovery time objective (RTO): Esbryn restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esbryn-encryption",
+  "entity": "esbryn",
+  "title": "Esbryn encryption",
+  "text": "Esbryn encryption overview.\n\nEsbryn encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esbryn-pricing",
+  "entity": "esbryn",
+  "title": "Esbryn pricing",
+  "text": "Esbryn pricing overview for replication and standby capacity.\n\nEsbryn bills cross-region replication at $0.06 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esbryn-regions",
+  "entity": "esbryn",
+  "title": "Esbryn regions",
+  "text": "Esbryn regions overview.\n\nEsbryn operates 10 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esdrick-backup",
+  "entity": "esdrick",
+  "title": "Esdrick backup",
+  "text": "Esdrick backup overview.\n\nEsdrick backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esdrick-disaster-recovery",
+  "entity": "esdrick",
+  "title": "Esdrick disaster recovery",
+  "text": "Esdrick disaster recovery overview. Esdrick replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Esdrick RPO is 15 seconds of data loss at most.\n\nRecovery time objective (RTO): Esdrick restores service within 900 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esdrick-encryption",
+  "entity": "esdrick",
+  "title": "Esdrick encryption",
+  "text": "Esdrick encryption overview.\n\nEsdrick encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esdrick-pricing",
+  "entity": "esdrick",
+  "title": "Esdrick pricing",
+  "text": "Esdrick pricing overview for replication and standby capacity.\n\nEsdrick bills cross-region replication at $0.01 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esdrick-regions",
+  "entity": "esdrick",
+  "title": "Esdrick regions",
+  "text": "Esdrick regions overview.\n\nEsdrick operates 9 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "estris-backup",
+  "entity": "estris",
+  "title": "Estris backup",
+  "text": "Estris backup overview.\n\nEstris backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "estris-disaster-recovery",
+  "entity": "estris",
+  "title": "Estris disaster recovery",
+  "text": "Estris disaster recovery overview. Estris replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Estris RPO is 0 seconds of data loss at most.\n\nRecovery time objective (RTO): Estris restores service within 300 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "estris-encryption",
+  "entity": "estris",
+  "title": "Estris encryption",
+  "text": "Estris encryption overview.\n\nEstris encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "estris-pricing",
+  "entity": "estris",
+  "title": "Estris pricing",
+  "text": "Estris pricing overview for replication and standby capacity.\n\nEstris bills cross-region replication at $0.02 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "estris-regions",
+  "entity": "estris",
+  "title": "Estris regions",
+  "text": "Estris regions overview.\n\nEstris operates 10 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esvell-backup",
+  "entity": "esvell",
+  "title": "Esvell backup",
+  "text": "Esvell backup overview.\n\nEsvell backup vaults keep snapshots for 30 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esvell-disaster-recovery",
+  "entity": "esvell",
+  "title": "Esvell disaster recovery",
+  "text": "Esvell disaster recovery overview. Esvell replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Esvell RPO is 60 seconds of data loss at most.\n\nRecovery time objective (RTO): Esvell restores service within 900 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esvell-encryption",
+  "entity": "esvell",
+  "title": "Esvell encryption",
+  "text": "Esvell encryption overview.\n\nEsvell encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esvell-pricing",
+  "entity": "esvell",
+  "title": "Esvell pricing",
+  "text": "Esvell pricing overview for replication and standby capacity.\n\nEsvell bills cross-region replication at $0.02 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "esvell-regions",
+  "entity": "esvell",
+  "title": "Esvell regions",
+  "text": "Esvell regions overview.\n\nEsvell operates 11 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "galnix-backup",
+  "entity": "galnix",
+  "title": "Galnix backup",
+  "text": "Galnix backup overview.\n\nGalnix backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "galnix-disaster-recovery",
+  "entity": "galnix",
+  "title": "Galnix disaster recovery",
+  "text": "Galnix disaster recovery overview. Galnix replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Galnix RPO is 5 seconds of data loss at most.\n\nRecovery time objective (RTO): Galnix restores service within 300 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "galnix-encryption",
+  "entity": "galnix",
+  "title": "Galnix encryption",
+  "text": "Galnix encryption overview.\n\nGalnix encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "galnix-pricing",
+  "entity": "galnix",
+  "title": "Galnix pricing",
+  "text": "Galnix pricing overview for replication and standby capacity.\n\nGalnix bills cross-region replication at $0.04 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "galnix-regions",
+  "entity": "galnix",
+  "title": "Galnix regions",
+  "text": "Galnix regions overview.\n\nGalnix operates 10 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "halwick-backup",
+  "entity": "halwick",
+  "title": "Halwick backup",
+  "text": "Halwick backup overview.\n\nHalwick backup vaults keep snapshots for 90 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "halwick-disaster-recovery",
+  "entity": "halwick",
+  "title": "Halwick disaster recovery",
+  "text": "Halwick disaster recovery overview. Halwick replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Halwick RPO is 60 seconds of data loss at most.\n\nRecovery time objective (RTO): Halwick restores service within 300 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "halwick-encryption",
+  "entity": "halwick",
+  "title": "Halwick encryption",
+  "text": "Halwick encryption overview.\n\nHalwick encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "halwick-pricing",
+  "entity": "halwick",
+  "title": "Halwick pricing",
+  "text": "Halwick pricing overview for replication and standby capacity.\n\nHalwick bills cross-region replication at $0.08 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "halwick-regions",
+  "entity": "halwick",
+  "title": "Halwick regions",
+  "text": "Halwick regions overview.\n\nHalwick operates 8 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isdrick-backup",
+  "entity": "isdrick",
+  "title": "Isdrick backup",
+  "text": "Isdrick backup overview.\n\nIsdrick backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isdrick-disaster-recovery",
+  "entity": "isdrick",
+  "title": "Isdrick disaster recovery",
+  "text": "Isdrick disaster recovery overview. Isdrick replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Isdrick RPO is 0 seconds of data loss at most.\n\nRecovery time objective (RTO): Isdrick restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isdrick-encryption",
+  "entity": "isdrick",
+  "title": "Isdrick encryption",
+  "text": "Isdrick encryption overview.\n\nIsdrick encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isdrick-pricing",
+  "entity": "isdrick",
+  "title": "Isdrick pricing",
+  "text": "Isdrick pricing overview for replication and standby capacity.\n\nIsdrick bills cross-region replication at $0.07 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isdrick-regions",
+  "entity": "isdrick",
+  "title": "Isdrick regions",
+  "text": "Isdrick regions overview.\n\nIsdrick operates 6 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isnix-backup",
+  "entity": "isnix",
+  "title": "Isnix backup",
+  "text": "Isnix backup overview.\n\nIsnix backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isnix-disaster-recovery",
+  "entity": "isnix",
+  "title": "Isnix disaster recovery",
+  "text": "Isnix disaster recovery overview. Isnix replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Isnix RPO is 5 seconds of data loss at most.\n\nRecovery time objective (RTO): Isnix restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isnix-encryption",
+  "entity": "isnix",
+  "title": "Isnix encryption",
+  "text": "Isnix encryption overview.\n\nIsnix encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isnix-pricing",
+  "entity": "isnix",
+  "title": "Isnix pricing",
+  "text": "Isnix pricing overview for replication and standby capacity.\n\nIsnix bills cross-region replication at $0.03 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "isnix-regions",
+  "entity": "isnix",
+  "title": "Isnix regions",
+  "text": "Isnix regions overview.\n\nIsnix operates 8 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "istris-backup",
+  "entity": "istris",
+  "title": "Istris backup",
+  "text": "Istris backup overview.\n\nIstris backup vaults keep snapshots for 30 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "istris-disaster-recovery",
+  "entity": "istris",
+  "title": "Istris disaster recovery",
+  "text": "Istris disaster recovery overview. Istris replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Istris RPO is 15 seconds of data loss at most.\n\nRecovery time objective (RTO): Istris restores service within 60 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "istris-encryption",
+  "entity": "istris",
+  "title": "Istris encryption",
+  "text": "Istris encryption overview.\n\nIstris encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "istris-pricing",
+  "entity": "istris",
+  "title": "Istris pricing",
+  "text": "Istris pricing overview for replication and standby capacity.\n\nIstris bills cross-region replication at $0.01 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "istris-regions",
+  "entity": "istris",
+  "title": "Istris regions",
+  "text": "Istris regions overview.\n\nIstris operates 10 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jorbryn-backup",
+  "entity": "jorbryn",
+  "title": "Jorbryn backup",
+  "text": "Jorbryn backup overview.\n\nJorbryn backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jorbryn-disaster-recovery",
+  "entity": "jorbryn",
+  "title": "Jorbryn disaster recovery",
+  "text": "Jorbryn disaster recovery overview. Jorbryn replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Jorbryn RPO is 15 seconds of data loss at most.\n\nRecovery time objective (RTO): Jorbryn restores service within 300 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jorbryn-encryption",
+  "entity": "jorbryn",
+  "title": "Jorbryn encryption",
+  "text": "Jorbryn encryption overview.\n\nJorbryn encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jorbryn-pricing",
+  "entity": "jorbryn",
+  "title": "Jorbryn pricing",
+  "text": "Jorbryn pricing overview for replication and standby capacity.\n\nJorbryn bills cross-region replication at $0.07 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jorbryn-regions",
+  "entity": "jorbryn",
+  "title": "Jorbryn regions",
+  "text": "Jorbryn regions overview.\n\nJorbryn operates 4 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jornix-backup",
+  "entity": "jornix",
+  "title": "Jornix backup",
+  "text": "Jornix backup overview.\n\nJornix backup vaults keep snapshots for 30 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jornix-disaster-recovery",
+  "entity": "jornix",
+  "title": "Jornix disaster recovery",
+  "text": "Jornix disaster recovery overview. Jornix replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Jornix RPO is 30 seconds of data loss at most.\n\nRecovery time objective (RTO): Jornix restores service within 60 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jornix-encryption",
+  "entity": "jornix",
+  "title": "Jornix encryption",
+  "text": "Jornix encryption overview.\n\nJornix encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jornix-pricing",
+  "entity": "jornix",
+  "title": "Jornix pricing",
+  "text": "Jornix pricing overview for replication and standby capacity.\n\nJornix bills cross-region replication at $0.01 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "jornix-regions",
+  "entity": "jornix",
+  "title": "Jornix regions",
+  "text": "Jornix regions overview.\n\nJornix operates 12 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "kelmora-backup",
+  "entity": "kelmora",
+  "title": "Kelmora backup",
+  "text": "Kelmora backup overview.\n\nKelmora backup vaults keep snapshots for 30 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "kelmora-disaster-recovery",
+  "entity": "kelmora",
+  "title": "Kelmora disaster recovery",
+  "text": "Kelmora disaster recovery overview. Kelmora replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Kelmora RPO is 60 seconds of data loss at most.\n\nRecovery time objective (RTO): Kelmora restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "kelmora-encryption",
+  "entity": "kelmora",
+  "title": "Kelmora encryption",
+  "text": "Kelmora encryption overview.\n\nKelmora encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "kelmora-pricing",
+  "entity": "kelmora",
+  "title": "Kelmora pricing",
+  "text": "Kelmora pricing overview for replication and standby capacity.\n\nKelmora bills cross-region replication at $0.06 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "kelmora-regions",
+  "entity": "kelmora",
+  "title": "Kelmora regions",
+  "text": "Kelmora regions overview.\n\nKelmora operates 6 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lumora-backup",
+  "entity": "lumora",
+  "title": "Lumora backup",
+  "text": "Lumora backup overview.\n\nLumora backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lumora-disaster-recovery",
+  "entity": "lumora",
+  "title": "Lumora disaster recovery",
+  "text": "Lumora disaster recovery overview. Lumora replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Lumora RPO is 0 seconds of data loss at most.\n\nRecovery time objective (RTO): Lumora restores service within 3600 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lumora-encryption",
+  "entity": "lumora",
+  "title": "Lumora encryption",
+  "text": "Lumora encryption overview.\n\nLumora encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lumora-pricing",
+  "entity": "lumora",
+  "title": "Lumora pricing",
+  "text": "Lumora pricing overview for replication and standby capacity.\n\nLumora bills cross-region replication at $0.02 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lumora-regions",
+  "entity": "lumora",
+  "title": "Lumora regions",
+  "text": "Lumora regions overview.\n\nLumora operates 12 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lutris-backup",
+  "entity": "lutris",
+  "title": "Lutris backup",
+  "text": "Lutris backup overview.\n\nLutris backup vaults keep snapshots for 90 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lutris-disaster-recovery",
+  "entity": "lutris",
+  "title": "Lutris disaster recovery",
+  "text": "Lutris disaster recovery overview. Lutris replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Lutris RPO is 5 seconds of data loss at most.\n\nRecovery time objective (RTO): Lutris restores service within 3600 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lutris-encryption",
+  "entity": "lutris",
+  "title": "Lutris encryption",
+  "text": "Lutris encryption overview.\n\nLutris encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lutris-pricing",
+  "entity": "lutris",
+  "title": "Lutris pricing",
+  "text": "Lutris pricing overview for replication and standby capacity.\n\nLutris bills cross-region replication at $0.02 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "lutris-regions",
+  "entity": "lutris",
+  "title": "Lutris regions",
+  "text": "Lutris regions overview.\n\nLutris operates 3 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "luwick-backup",
+  "entity": "luwick",
+  "title": "Luwick backup",
+  "text": "Luwick backup overview.\n\nLuwick backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "luwick-disaster-recovery",
+  "entity": "luwick",
+  "title": "Luwick disaster recovery",
+  "text": "Luwick disaster recovery overview. Luwick replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Luwick RPO is 60 seconds of data loss at most.\n\nRecovery time objective (RTO): Luwick restores service within 900 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "luwick-encryption",
+  "entity": "luwick",
+  "title": "Luwick encryption",
+  "text": "Luwick encryption overview.\n\nLuwick encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "luwick-pricing",
+  "entity": "luwick",
+  "title": "Luwick pricing",
+  "text": "Luwick pricing overview for replication and standby capacity.\n\nLuwick bills cross-region replication at $0.08 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "luwick-regions",
+  "entity": "luwick",
+  "title": "Luwick regions",
+  "text": "Luwick regions overview.\n\nLuwick operates 4 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "morvell-backup",
+  "entity": "morvell",
+  "title": "Morvell backup",
+  "text": "Morvell backup overview.\n\nMorvell backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "morvell-disaster-recovery",
+  "entity": "morvell",
+  "title": "Morvell disaster recovery",
+  "text": "Morvell disaster recovery overview. Morvell replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Morvell RPO is 60 seconds of data loss at most.\n\nRecovery time objective (RTO): Morvell restores service within 3600 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "morvell-encryption",
+  "entity": "morvell",
+  "title": "Morvell encryption",
+  "text": "Morvell encryption overview.\n\nMorvell encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "morvell-pricing",
+  "entity": "morvell",
+  "title": "Morvell pricing",
+  "text": "Morvell pricing overview for replication and standby capacity.\n\nMorvell bills cross-region replication at $0.07 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "morvell-regions",
+  "entity": "morvell",
+  "title": "Morvell regions",
+  "text": "Morvell regions overview.\n\nMorvell operates 6 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "nevmora-backup",
+  "entity": "nevmora",
+  "title": "Nevmora backup",
+  "text": "Nevmora backup overview.\n\nNevmora backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "nevmora-disaster-recovery",
+  "entity": "nevmora",
+  "title": "Nevmora disaster recovery",
+  "text": "Nevmora disaster recovery overview. Nevmora replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Nevmora RPO is 0 seconds of data loss at most.\n\nRecovery time objective (RTO): Nevmora restores service within 300 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "nevmora-encryption",
+  "entity": "nevmora",
+  "title": "Nevmora encryption",
+  "text": "Nevmora encryption overview.\n\nNevmora encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "nevmora-pricing",
+  "entity": "nevmora",
+  "title": "Nevmora pricing",
+  "text": "Nevmora pricing overview for replication and standby capacity.\n\nNevmora bills cross-region replication at $0.07 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "nevmora-regions",
+  "entity": "nevmora",
+  "title": "Nevmora regions",
+  "text": "Nevmora regions overview.\n\nNevmora operates 7 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelbryn-backup",
+  "entity": "pelbryn",
+  "title": "Pelbryn backup",
+  "text": "Pelbryn backup overview.\n\nPelbryn backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelbryn-disaster-recovery",
+  "entity": "pelbryn",
+  "title": "Pelbryn disaster recovery",
+  "text": "Pelbryn disaster recovery overview. Pelbryn replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Pelbryn RPO is 60 seconds of data loss at most.\n\nRecovery time objective (RTO): Pelbryn restores service within 3600 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelbryn-encryption",
+  "entity": "pelbryn",
+  "title": "Pelbryn encryption",
+  "text": "Pelbryn encryption overview.\n\nPelbryn encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelbryn-pricing",
+  "entity": "pelbryn",
+  "title": "Pelbryn pricing",
+  "text": "Pelbryn pricing overview for replication and standby capacity.\n\nPelbryn bills cross-region replication at $0.06 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelbryn-regions",
+  "entity": "pelbryn",
+  "title": "Pelbryn regions",
+  "text": "Pelbryn regions overview.\n\nPelbryn operates 11 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "peltris-backup",
+  "entity": "peltris",
+  "title": "Peltris backup",
+  "text": "Peltris backup overview.\n\nPeltris backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "peltris-disaster-recovery",
+  "entity": "peltris",
+  "title": "Peltris disaster recovery",
+  "text": "Peltris disaster recovery overview. Peltris replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Peltris RPO is 5 seconds of data loss at most.\n\nRecovery time objective (RTO): Peltris restores service within 3600 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "peltris-encryption",
+  "entity": "peltris",
+  "title": "Peltris encryption",
+  "text": "Peltris encryption overview.\n\nPeltris encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "peltris-pricing",
+  "entity": "peltris",
+  "title": "Peltris pricing",
+  "text": "Peltris pricing overview for replication and standby capacity.\n\nPeltris bills cross-region replication at $0.06 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "peltris-regions",
+  "entity": "peltris",
+  "title": "Peltris regions",
+  "text": "Peltris regions overview.\n\nPeltris operates 11 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelvane-backup",
+  "entity": "pelvane",
+  "title": "Pelvane backup",
+  "text": "Pelvane backup overview.\n\nPelvane backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelvane-disaster-recovery",
+  "entity": "pelvane",
+  "title": "Pelvane disaster recovery",
+  "text": "Pelvane disaster recovery overview. Pelvane replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Pelvane RPO is 15 seconds of data loss at most.\n\nRecovery time objective (RTO): Pelvane restores service within 3600 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelvane-encryption",
+  "entity": "pelvane",
+  "title": "Pelvane encryption",
+  "text": "Pelvane encryption overview.\n\nPelvane encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelvane-pricing",
+  "entity": "pelvane",
+  "title": "Pelvane pricing",
+  "text": "Pelvane pricing overview for replication and standby capacity.\n\nPelvane bills cross-region replication at $0.01 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "pelvane-regions",
+  "entity": "pelvane",
+  "title": "Pelvane regions",
+  "text": "Pelvane regions overview.\n\nPelvane operates 3 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quindor-backup",
+  "entity": "quindor",
+  "title": "Quindor backup",
+  "text": "Quindor backup overview.\n\nQuindor backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quindor-disaster-recovery",
+  "entity": "quindor",
+  "title": "Quindor disaster recovery",
+  "text": "Quindor disaster recovery overview. Quindor replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Quindor RPO is 15 seconds of data loss at most.\n\nRecovery time objective (RTO): Quindor restores service within 60 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quindor-encryption",
+  "entity": "quindor",
+  "title": "Quindor encryption",
+  "text": "Quindor encryption overview.\n\nQuindor encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quindor-pricing",
+  "entity": "quindor",
+  "title": "Quindor pricing",
+  "text": "Quindor pricing overview for replication and standby capacity.\n\nQuindor bills cross-region replication at $0.09 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quindor-regions",
+  "entity": "quindor",
+  "title": "Quindor regions",
+  "text": "Quindor regions overview.\n\nQuindor operates 12 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quinmora-backup",
+  "entity": "quinmora",
+  "title": "Quinmora backup",
+  "text": "Quinmora backup overview.\n\nQuinmora backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quinmora-disaster-recovery",
+  "entity": "quinmora",
+  "title": "Quinmora disaster recovery",
+  "text": "Quinmora disaster recovery overview. Quinmora replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Quinmora RPO is 0 seconds of data loss at most.\n\nRecovery time objective (RTO): Quinmora restores service within 60 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quinmora-encryption",
+  "entity": "quinmora",
+  "title": "Quinmora encryption",
+  "text": "Quinmora encryption overview.\n\nQuinmora encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quinmora-pricing",
+  "entity": "quinmora",
+  "title": "Quinmora pricing",
+  "text": "Quinmora pricing overview for replication and standby capacity.\n\nQuinmora bills cross-region replication at $0.03 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "quinmora-regions",
+  "entity": "quinmora",
+  "title": "Quinmora regions",
+  "text": "Quinmora regions overview.\n\nQuinmora operates 8 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "rostris-backup",
+  "entity": "rostris",
+  "title": "Rostris backup",
+  "text": "Rostris backup overview.\n\nRostris backup vaults keep snapshots for 90 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "rostris-disaster-recovery",
+  "entity": "rostris",
+  "title": "Rostris disaster recovery",
+  "text": "Rostris disaster recovery overview. Rostris replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Rostris RPO is 60 seconds of data loss at most.\n\nRecovery time objective (RTO): Rostris restores service within 300 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "rostris-encryption",
+  "entity": "rostris",
+  "title": "Rostris encryption",
+  "text": "Rostris encryption overview.\n\nRostris encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "rostris-pricing",
+  "entity": "rostris",
+  "title": "Rostris pricing",
+  "text": "Rostris pricing overview for replication and standby capacity.\n\nRostris bills cross-region replication at $0.05 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "rostris-regions",
+  "entity": "rostris",
+  "title": "Rostris regions",
+  "text": "Rostris regions overview.\n\nRostris operates 5 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "roswick-backup",
+  "entity": "roswick",
+  "title": "Roswick backup",
+  "text": "Roswick backup overview.\n\nRoswick backup vaults keep snapshots for 90 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "roswick-disaster-recovery",
+  "entity": "roswick",
+  "title": "Roswick disaster recovery",
+  "text": "Roswick disaster recovery overview. Roswick replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Roswick RPO is 5 seconds of data loss at most.\n\nRecovery time objective (RTO): Roswick restores service within 900 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "roswick-encryption",
+  "entity": "roswick",
+  "title": "Roswick encryption",
+  "text": "Roswick encryption overview.\n\nRoswick encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "roswick-pricing",
+  "entity": "roswick",
+  "title": "Roswick pricing",
+  "text": "Roswick pricing overview for replication and standby capacity.\n\nRoswick bills cross-region replication at $0.03 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "roswick-regions",
+  "entity": "roswick",
+  "title": "Roswick regions",
+  "text": "Roswick regions overview.\n\nRoswick operates 9 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selbryn-backup",
+  "entity": "selbryn",
+  "title": "Selbryn backup",
+  "text": "Selbryn backup overview.\n\nSelbryn backup vaults keep snapshots for 90 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selbryn-disaster-recovery",
+  "entity": "selbryn",
+  "title": "Selbryn disaster recovery",
+  "text": "Selbryn disaster recovery overview. Selbryn replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Selbryn RPO is 0 seconds of data loss at most.\n\nRecovery time objective (RTO): Selbryn restores service within 300 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selbryn-encryption",
+  "entity": "selbryn",
+  "title": "Selbryn encryption",
+  "text": "Selbryn encryption overview.\n\nSelbryn encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selbryn-pricing",
+  "entity": "selbryn",
+  "title": "Selbryn pricing",
+  "text": "Selbryn pricing overview for replication and standby capacity.\n\nSelbryn bills cross-region replication at $0.08 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selbryn-regions",
+  "entity": "selbryn",
+  "title": "Selbryn regions",
+  "text": "Selbryn regions overview.\n\nSelbryn operates 11 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selmora-backup",
+  "entity": "selmora",
+  "title": "Selmora backup",
+  "text": "Selmora backup overview.\n\nSelmora backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selmora-disaster-recovery",
+  "entity": "selmora",
+  "title": "Selmora disaster recovery",
+  "text": "Selmora disaster recovery overview. Selmora replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Selmora RPO is 30 seconds of data loss at most.\n\nRecovery time objective (RTO): Selmora restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selmora-encryption",
+  "entity": "selmora",
+  "title": "Selmora encryption",
+  "text": "Selmora encryption overview.\n\nSelmora encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selmora-pricing",
+  "entity": "selmora",
+  "title": "Selmora pricing",
+  "text": "Selmora pricing overview for replication and standby capacity.\n\nSelmora bills cross-region replication at $0.02 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selmora-regions",
+  "entity": "selmora",
+  "title": "Selmora regions",
+  "text": "Selmora regions overview.\n\nSelmora operates 4 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selnix-backup",
+  "entity": "selnix",
+  "title": "Selnix backup",
+  "text": "Selnix backup overview.\n\nSelnix backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selnix-disaster-recovery",
+  "entity": "selnix",
+  "title": "Selnix disaster recovery",
+  "text": "Selnix disaster recovery overview. Selnix replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Selnix RPO is 60 seconds of data loss at most.\n\nRecovery time objective (RTO): Selnix restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selnix-encryption",
+  "entity": "selnix",
+  "title": "Selnix encryption",
+  "text": "Selnix encryption overview.\n\nSelnix encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selnix-pricing",
+  "entity": "selnix",
+  "title": "Selnix pricing",
+  "text": "Selnix pricing overview for replication and standby capacity.\n\nSelnix bills cross-region replication at $0.08 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selnix-regions",
+  "entity": "selnix",
+  "title": "Selnix regions",
+  "text": "Selnix regions overview.\n\nSelnix operates 4 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "seltris-backup",
+  "entity": "seltris",
+  "title": "Seltris backup",
+  "text": "Seltris backup overview.\n\nSeltris backup vaults keep snapshots for 90 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "seltris-disaster-recovery",
+  "entity": "seltris",
+  "title": "Seltris disaster recovery",
+  "text": "Seltris disaster recovery overview. Seltris replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Seltris RPO is 5 seconds of data loss at most.\n\nRecovery time objective (RTO): Seltris restores service within 3600 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "seltris-encryption",
+  "entity": "seltris",
+  "title": "Seltris encryption",
+  "text": "Seltris encryption overview.\n\nSeltris encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "seltris-pricing",
+  "entity": "seltris",
+  "title": "Seltris pricing",
+  "text": "Seltris pricing overview for replication and standby capacity.\n\nSeltris bills cross-region replication at $0.06 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "seltris-regions",
+  "entity": "seltris",
+  "title": "Seltris regions",
+  "text": "Seltris regions overview.\n\nSeltris operates 8 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selvell-backup",
+  "entity": "selvell",
+  "title": "Selvell backup",
+  "text": "Selvell backup overview.\n\nSelvell backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selvell-disaster-recovery",
+  "entity": "selvell",
+  "title": "Selvell disaster recovery",
+  "text": "Selvell disaster recovery overview. Selvell replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Selvell RPO is 60 seconds of data loss at most.\n\nRecovery time objective (RTO): Selvell restores service within 900 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selvell-encryption",
+  "entity": "selvell",
+  "title": "Selvell encryption",
+  "text": "Selvell encryption overview.\n\nSelvell encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selvell-pricing",
+  "entity": "selvell",
+  "title": "Selvell pricing",
+  "text": "Selvell pricing overview for replication and standby capacity.\n\nSelvell bills cross-region replication at $0.09 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "selvell-regions",
+  "entity": "selvell",
+  "title": "Selvell regions",
+  "text": "Selvell regions overview.\n\nSelvell operates 4 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavbryn-backup",
+  "entity": "tavbryn",
+  "title": "Tavbryn backup",
+  "text": "Tavbryn backup overview.\n\nTavbryn backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavbryn-disaster-recovery",
+  "entity": "tavbryn",
+  "title": "Tavbryn disaster recovery",
+  "text": "Tavbryn disaster recovery overview. Tavbryn replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Tavbryn RPO is 5 seconds of data loss at most.\n\nRecovery time objective (RTO): Tavbryn restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavbryn-encryption",
+  "entity": "tavbryn",
+  "title": "Tavbryn encryption",
+  "text": "Tavbryn encryption overview.\n\nTavbryn encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavbryn-pricing",
+  "entity": "tavbryn",
+  "title": "Tavbryn pricing",
+  "text": "Tavbryn pricing overview for replication and standby capacity.\n\nTavbryn bills cross-region replication at $0.04 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavbryn-regions",
+  "entity": "tavbryn",
+  "title": "Tavbryn regions",
+  "text": "Tavbryn regions overview.\n\nTavbryn operates 11 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavnix-backup",
+  "entity": "tavnix",
+  "title": "Tavnix backup",
+  "text": "Tavnix backup overview.\n\nTavnix backup vaults keep snapshots for 30 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavnix-disaster-recovery",
+  "entity": "tavnix",
+  "title": "Tavnix disaster recovery",
+  "text": "Tavnix disaster recovery overview. Tavnix replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Tavnix RPO is 5 seconds of data loss at most.\n\nRecovery time objective (RTO): Tavnix restores service within 900 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavnix-encryption",
+  "entity": "tavnix",
+  "title": "Tavnix encryption",
+  "text": "Tavnix encryption overview.\n\nTavnix encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavnix-pricing",
+  "entity": "tavnix",
+  "title": "Tavnix pricing",
+  "text": "Tavnix pricing overview for replication and standby capacity.\n\nTavnix bills cross-region replication at $0.04 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "tavnix-regions",
+  "entity": "tavnix",
+  "title": "Tavnix regions",
+  "text": "Tavnix regions overview.\n\nTavnix operates 6 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "uldor-backup",
+  "entity": "uldor",
+  "title": "Uldor backup",
+  "text": "Uldor backup overview.\n\nUldor backup vaults keep snapshots for 14 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "uldor-disaster-recovery",
+  "entity": "uldor",
+  "title": "Uldor disaster recovery",
+  "text": "Uldor disaster recovery overview. Uldor replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Uldor RPO is 300 seconds of data loss at most.\n\nRecovery time objective (RTO): Uldor restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "uldor-encryption",
+  "entity": "uldor",
+  "title": "Uldor encryption",
+  "text": "Uldor encryption overview.\n\nUldor encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "uldor-pricing",
+  "entity": "uldor",
+  "title": "Uldor pricing",
+  "text": "Uldor pricing overview for replication and standby capacity.\n\nUldor bills cross-region replication at $0.04 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "uldor-regions",
+  "entity": "uldor",
+  "title": "Uldor regions",
+  "text": "Uldor regions overview.\n\nUldor operates 4 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ulmora-backup",
+  "entity": "ulmora",
+  "title": "Ulmora backup",
+  "text": "Ulmora backup overview.\n\nUlmora backup vaults keep snapshots for 7 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ulmora-disaster-recovery",
+  "entity": "ulmora",
+  "title": "Ulmora disaster recovery",
+  "text": "Ulmora disaster recovery overview. Ulmora replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Ulmora RPO is 15 seconds of data loss at most.\n\nRecovery time objective (RTO): Ulmora restores service within 1800 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ulmora-encryption",
+  "entity": "ulmora",
+  "title": "Ulmora encryption",
+  "text": "Ulmora encryption overview.\n\nUlmora encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ulmora-pricing",
+  "entity": "ulmora",
+  "title": "Ulmora pricing",
+  "text": "Ulmora pricing overview for replication and standby capacity.\n\nUlmora bills cross-region replication at $0.05 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ulmora-regions",
+  "entity": "ulmora",
+  "title": "Ulmora regions",
+  "text": "Ulmora regions overview.\n\nUlmora operates 4 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ultris-backup",
+  "entity": "ultris",
+  "title": "Ultris backup",
+  "text": "Ultris backup overview.\n\nUltris backup vaults keep snapshots for 30 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ultris-disaster-recovery",
+  "entity": "ultris",
+  "title": "Ultris disaster recovery",
+  "text": "Ultris disaster recovery overview. Ultris replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Ultris RPO is 300 seconds of data loss at most.\n\nRecovery time objective (RTO): Ultris restores service within 300 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ultris-encryption",
+  "entity": "ultris",
+  "title": "Ultris encryption",
+  "text": "Ultris encryption overview.\n\nUltris encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ultris-pricing",
+  "entity": "ultris",
+  "title": "Ultris pricing",
+  "text": "Ultris pricing overview for replication and standby capacity.\n\nUltris bills cross-region replication at $0.02 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "ultris-regions",
+  "entity": "ultris",
+  "title": "Ultris regions",
+  "text": "Ultris regions overview.\n\nUltris operates 11 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "wynnix-backup",
+  "entity": "wynnix",
+  "title": "Wynnix backup",
+  "text": "Wynnix backup overview.\n\nWynnix backup vaults keep snapshots for 90 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "wynnix-disaster-recovery",
+  "entity": "wynnix",
+  "title": "Wynnix disaster recovery",
+  "text": "Wynnix disaster recovery overview. Wynnix replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Wynnix RPO is 0 seconds of data loss at most.\n\nRecovery time objective (RTO): Wynnix restores service within 900 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "wynnix-encryption",
+  "entity": "wynnix",
+  "title": "Wynnix encryption",
+  "text": "Wynnix encryption overview.\n\nWynnix encrypts data at rest with customer-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "wynnix-pricing",
+  "entity": "wynnix",
+  "title": "Wynnix pricing",
+  "text": "Wynnix pricing overview for replication and standby capacity.\n\nWynnix bills cross-region replication at $0.05 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "wynnix-regions",
+  "entity": "wynnix",
+  "title": "Wynnix regions",
+  "text": "Wynnix regions overview.\n\nWynnix operates 5 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "zeltris-backup",
+  "entity": "zeltris",
+  "title": "Zeltris backup",
+  "text": "Zeltris backup overview.\n\nZeltris backup vaults keep snapshots for 30 days by default, with a configurable retention period.\n\nVault lock can prevent deletion of backups before retention ends.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "zeltris-disaster-recovery",
+  "entity": "zeltris",
+  "title": "Zeltris disaster recovery",
+  "text": "Zeltris disaster recovery overview. Zeltris replicates data to a secondary region for failover, and recovery plans start services in a defined order.\n\nRecovery point objective (RPO): with continuous replication the Zeltris RPO is 300 seconds of data loss at most.\n\nRecovery time objective (RTO): Zeltris restores service within 60 seconds of a regional failover.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "zeltris-encryption",
+  "entity": "zeltris",
+  "title": "Zeltris encryption",
+  "text": "Zeltris encryption overview.\n\nZeltris encrypts data at rest with provider-managed keys held in a managed key service.\n\nEncryption in transit uses TLS for all service endpoints.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "zeltris-pricing",
+  "entity": "zeltris",
+  "title": "Zeltris pricing",
+  "text": "Zeltris pricing overview for replication and standby capacity.\n\nZeltris bills cross-region replication at $0.09 per gigabyte transferred; this fee is the main cost of disaster recovery.\n\nStandby compute is charged at the normal hourly rate and idle replicas cost nothing.",
+  "access_scope": "bench"
+ },
+ {
+  "source_id": "zeltris-regions",
+  "entity": "zeltris",
+  "title": "Zeltris regions",
+  "text": "Zeltris regions overview.\n\nZeltris operates 8 regions, each with at least three availability zones.\n\nRegions are isolated geographic areas connected by low latency links.",
+  "access_scope": "bench"
+ }
+]
