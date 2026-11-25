@@ -9,7 +9,7 @@ export const NODE_H = 46;
 const COL_GAP = 84;
 const ROW_GAP = 14;
 
-export type Kind = "executed" | "reused" | "removed";
+export type Kind = "executed" | "reused" | "skipped" | "removed";
 
 export interface LaidNode {
   id: string;

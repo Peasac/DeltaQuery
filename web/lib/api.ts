@@ -1,7 +1,7 @@
 // Typed client for the DeltaQuery API (proxied at /api by next.config.mjs).
 // Shapes mirror deltaquery/api/views.py.
 
-export type Status = "executed" | "reused";
+export type Status = "executed" | "reused" | "skipped";
 
 export interface EvidenceView {
   evidence_id: string;
@@ -63,6 +63,7 @@ export interface TraceDict {
   epoch: number;
   executed_nodes: string[];
   reused_nodes: string[];
+  skipped_nodes: string[];
   removed_nodes: string[];
   reuse_rejections: [string, string][];
   timing_s: { compile: number; retrieval: number; generation: number };

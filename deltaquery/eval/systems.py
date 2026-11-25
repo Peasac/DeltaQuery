@@ -19,6 +19,8 @@ Ablations of deltaquery (same cache machinery as the exact baselines, keys toggl
 - abl_no_policy    = exact_versioned (policy dropped); listed for the ablation table
 - dq_coarse_policy deltaquery with whole-scope policy versions in signatures (pre-lever-1)
 - dq_no_memcache   deltaquery without the in-process artifact cache (pre-lever-2)
+- dq_no_sufficiency deltaquery with the always-retrieve planner (no claim checks)
+All other planner-based systems use the sufficiency planner, so they share its savings.
 
 Every cache-based system executes fresh work under the *current* policy (revoked sources are
 excluded at retrieval). Stale results can therefore only come from reuse.
@@ -43,6 +45,7 @@ from deltaquery.evidence.models import Artifact, Evidence, compute_artifact_hash
 from deltaquery.evidence.store import EvidenceStore
 from deltaquery.operators.base import ExecutionContext, Operator
 from deltaquery.operators.bm25 import BM25Index, BM25Operator, BM25Params
+from deltaquery.operators.coverage import ClaimCheckOperator
 from deltaquery.operators.dense import DenseIndex, DenseOperator, DenseParams
 from deltaquery.operators.embedding import HashingEmbedder, l2_normalize
 from deltaquery.operators.fusion import RRFOperator, RRFParams
@@ -60,7 +63,8 @@ class Snapshot:
     passages: PassageSet
     bm25: BM25Index
     dense: DenseIndex
-    planner: Planner
+    planner: Planner  # with evidence sufficiency (default)
+    planner_always: Planner  # always runs targeted retrieval for constraints
 
 
 @dataclass
@@ -80,13 +84,16 @@ class Env:
             bm25 = BM25Index(ps)
             dense = await DenseIndex.build(ps, embedder)
             planner = Planner(PlannerConfig(bm25=bm25, dense=dense, access_scope=scope))
-            snaps[k] = Snapshot(corpus, ps, bm25, dense, planner)
+            always = Planner(
+                PlannerConfig(bm25=bm25, dense=dense, access_scope=scope, sufficiency=False)
+            )
+            snaps[k] = Snapshot(corpus, ps, bm25, dense, planner, always)
         return cls(snaps, scope, embedder)
 
     def operators(self) -> list[Operator[Any]]:
         ops: list[Operator[Any]] = [RRFOperator(), MergeOperator()]
         for s in self.snapshots.values():
-            ops += [BM25Operator(s.bm25), DenseOperator(s.dense)]
+            ops += [BM25Operator(s.bm25), DenseOperator(s.dense), ClaimCheckOperator(s.passages)]
         return ops
 
 
@@ -131,12 +138,14 @@ class DeltaQuerySystem:
         name: str = "deltaquery",
         precise_access: bool = True,
         cache_size: int = 4096,
+        sufficiency: bool = True,
     ) -> None:
         self.env = env
         self.reuse = reuse
         self.name = name
         self.precise_access = precise_access
         self.cache_size = cache_size
+        self.sufficiency = sufficiency
         self._store: EvidenceStore | None = None
 
     async def reset(self) -> None:
@@ -146,7 +155,8 @@ class DeltaQuerySystem:
 
     async def turn(self, intent: Intent, state: WorldState) -> TurnOutcome:
         assert self._store is not None
-        plan = self.env.snapshots[state.snapshot].planner.build(intent)
+        snap = self.env.snapshots[state.snapshot]
+        plan = (snap.planner if self.sufficiency else snap.planner_always).build(intent)
         ex = Executor(
             self._store, self.env.operators(), state.policy, precise_access=self.precise_access
         )
@@ -157,7 +167,7 @@ class DeltaQuerySystem:
         return TurnOutcome(
             evidence=r.output.evidence,
             executed_nodes=len(executed),
-            reused_nodes=len(r.trace) - len(executed),
+            reused_nodes=sum(t.status is NodeStatus.REUSED for t in r.trace),
             retrieval_ops=sum(t.operator in RETRIEVERS for t in executed),
             seconds=dt,
         )
@@ -183,6 +193,31 @@ def _registry(ops: Sequence[Operator[Any]]) -> dict[tuple[Any, ...], Operator[An
     return out
 
 
+def _art(
+    key: str,
+    op: Operator[Any],
+    node: Node,
+    inputs: Sequence[Artifact],
+    ev: tuple[Evidence, ...],
+    now: datetime,
+) -> Artifact:
+    return Artifact(
+        signature=key,
+        operator=op.name,
+        operator_version=op.version,
+        output_contract=op.output_contract,
+        access_scope=node.access_scope,
+        access_policy_version="n/a",
+        source_snapshot=node.source_snapshot,
+        index_version=node.index_version,
+        model_version=node.model_version,
+        input_signatures=tuple(a.signature for a in inputs),
+        evidence=ev,
+        artifact_hash=compute_artifact_hash(op.output_contract, ev),
+        created_at=now,
+    )
+
+
 async def run_plan_cached(
     plan: Plan,
     registry: dict[tuple[Any, ...], Operator[Any]],
@@ -196,9 +231,13 @@ async def run_plan_cached(
     done: dict[str, Artifact] = {}
     executed = reused = retrieval = 0
 
-    async def resolve(node: Node) -> tuple[Artifact, bool]:
+    async def resolve(node: Node) -> tuple[Artifact, bool | None]:
+        """(artifact, reused?) with reused=None for a gated-off (skipped) node."""
         op = registry[(node.operator, node.source_snapshot, node.index_version, node.model_version)]
         inputs = [done[i] for i in node.input_ids]
+        if node.skip_if_nonempty is not None and done[node.skip_if_nonempty].evidence:
+            empty: tuple[Evidence, ...] = ()
+            return _art("skipped", op, node, inputs, empty, now), None
         key_parts: dict[str, Any] = {
             "op": node.operator,
             "params": node.canonical_parameters,
@@ -233,27 +272,14 @@ async def run_plan_cached(
             if cache is not None:
                 cache[key] = ev
             was_reused = False
-        art = Artifact(
-            signature=key,
-            operator=op.name,
-            operator_version=op.version,
-            output_contract=op.output_contract,
-            access_scope=node.access_scope,
-            access_policy_version="n/a",
-            source_snapshot=node.source_snapshot,
-            index_version=node.index_version,
-            model_version=node.model_version,
-            input_signatures=tuple(a.signature for a in inputs),
-            evidence=ev,
-            artifact_hash=compute_artifact_hash(op.output_contract, ev),
-            created_at=now,
-        )
-        return art, was_reused
+        return _art(key, op, node, inputs, ev, now), was_reused
 
     for layer in plan.layers():
         results = await asyncio.gather(*(resolve(n) for n in layer))
         for node, (art, was_reused) in zip(layer, results, strict=True):
             done[node.id] = art
+            if was_reused is None:
+                continue  # skipped
             if was_reused:
                 reused += 1
             else:
@@ -385,6 +411,7 @@ def all_systems(env: Env) -> list[System]:
         DeltaQuerySystem(env, reuse=False, name="full"),
         DeltaQuerySystem(env, name="dq_coarse_policy", precise_access=False),
         DeltaQuerySystem(env, name="dq_no_memcache", cache_size=0),
+        DeltaQuerySystem(env, name="dq_no_sufficiency", sufficiency=False),
         CacheSystem(env, "exact_naive", CacheKeyConfig(inputs=True, versions=False)),
         CacheSystem(env, "exact_versioned", CacheKeyConfig(inputs=True, versions=True)),
         SemanticCacheSystem(env, 0.95),

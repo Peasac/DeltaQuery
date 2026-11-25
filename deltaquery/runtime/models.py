@@ -31,12 +31,20 @@ class Node(BaseModel):
     freshness_policy: FreshnessPolicy = FreshnessPolicy.SNAPSHOT
     max_age_s: int | None = Field(default=None, gt=0)
     output_contract: str
+    # Gate: if the named node's output is non-empty, this node is skipped (empty output).
+    # Used for evidence sufficiency: retrieval runs only when the claim check found nothing.
+    skip_if_nonempty: str | None = None
 
     @model_validator(mode="after")
     def _freshness(self) -> Self:
         if (self.freshness_policy is FreshnessPolicy.TTL) != (self.max_age_s is not None):
             raise ValueError("max_age_s is required for, and only for, the ttl policy")
         return self
+
+
+def _deps(n: Node) -> tuple[str, ...]:
+    """Ordering dependencies: data inputs plus the gate, if any."""
+    return n.input_ids + ((n.skip_if_nonempty,) if n.skip_if_nonempty else ())
 
 
 class PlanValidationError(ValueError):
@@ -58,7 +66,7 @@ class Plan(BaseModel):
         if self.output_id not in by_id:
             raise PlanValidationError(f"output node {self.output_id!r} not in plan")
         for n in self.nodes:
-            for dep in n.input_ids:
+            for dep in _deps(n):
                 if dep not in by_id:
                     raise PlanValidationError(f"node {n.id!r} depends on unknown {dep!r}")
                 if by_id[dep].access_scope != n.access_scope:
@@ -75,7 +83,7 @@ class Plan(BaseModel):
 
     def layers(self) -> list[list[Node]]:
         """Topological layers (Kahn). Nodes within a layer are independent; sorted by id."""
-        remaining = {n.id: set(n.input_ids) for n in self.nodes}
+        remaining = {n.id: set(_deps(n)) for n in self.nodes}
         by_id = {n.id: n for n in self.nodes}
         done: set[str] = set()
         out: list[list[Node]] = []

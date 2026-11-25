@@ -87,6 +87,10 @@ button:focus-visible, .node:focus-visible { outline: 2px solid var(--highlight);
 .count-executed { color: var(--executed); }
 .count-reused { color: var(--reused); }
 .count-removed { color: var(--removed); }
+.count-skipped { color: var(--muted); }
+.chip-skipped { color: var(--muted); background: transparent; border-style: dotted; }
+.node-skipped rect { fill: transparent; stroke: var(--muted); stroke-dasharray: 2 3; }
+.node-skipped text { fill: var(--muted); }
 
 .main-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
 .main-head h2 { margin: 0 0 0.25rem; font-size: 1.05rem; }

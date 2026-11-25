@@ -41,6 +41,7 @@ class CoverageType(StrEnum):
     LEXICAL = "lexical"
     DENSE = "dense"
     FUSED = "fused"
+    CLAIM = "claim"  # evidence carrying extracted typed claims (coverage operator)
 
 
 class Evidence(BaseModel):

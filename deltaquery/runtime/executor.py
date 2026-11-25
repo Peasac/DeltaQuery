@@ -15,7 +15,7 @@ store raises DeterminismViolation if a signature ever yields different content.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
@@ -23,7 +23,7 @@ from typing import Any
 
 from deltaquery.canonical import hash_canonical
 from deltaquery.evidence.access import AccessDenied, AccessPolicy
-from deltaquery.evidence.models import Artifact, compute_artifact_hash
+from deltaquery.evidence.models import Artifact, Evidence, compute_artifact_hash
 from deltaquery.evidence.store import EvidenceStore
 from deltaquery.operators.base import BoundVersions, ExecutionContext, Operator
 from deltaquery.runtime.models import FreshnessPolicy, Node, Plan, PlanValidationError
@@ -34,6 +34,7 @@ from deltaquery.runtime.validate import ReuseContext, reuse_rejection_reason
 class NodeStatus(StrEnum):
     EXECUTED = "executed"
     REUSED = "reused"
+    SKIPPED = "skipped"  # gated off (e.g. existing evidence was sufficient)
 
 
 @dataclass(frozen=True)
@@ -172,6 +173,32 @@ class Executor:
                 traces.append(trace)
         return ExecutionResult(plan=plan, artifacts=artifacts, trace=tuple(traces))
 
+    @staticmethod
+    def _artifact(
+        node: Node,
+        op: Operator[Any],
+        sig: str,
+        access_fp: str,
+        inputs: Sequence[Artifact],
+        evidence: tuple[Evidence, ...],
+        now: datetime,
+    ) -> Artifact:
+        return Artifact(
+            signature=sig,
+            operator=op.name,
+            operator_version=op.version,
+            output_contract=op.output_contract,
+            access_scope=node.access_scope,
+            access_policy_version=access_fp,
+            source_snapshot=node.source_snapshot,
+            index_version=node.index_version,
+            model_version=node.model_version,
+            input_signatures=tuple(a.signature for a in inputs),
+            evidence=evidence,
+            artifact_hash=compute_artifact_hash(op.output_contract, evidence),
+            created_at=now,
+        )
+
     async def _resolve(
         self,
         node: Node,
@@ -189,7 +216,15 @@ class Executor:
             else view.revoked
         )
         access_fp = access_fingerprint(node.access_scope, deps)
-        sig = node_signature(node, op.version, [a.artifact_hash for a in inputs], access_fp)
+        gate: str | None = None
+        if node.skip_if_nonempty is not None:
+            gate = "skip" if done[node.skip_if_nonempty].evidence else "run"
+        sig = node_signature(
+            node, op.version, [a.artifact_hash for a in inputs], access_fp, gate=gate
+        )
+        if gate == "skip":
+            skipped = self._artifact(node, op, sig, access_fp, inputs, (), self.clock())
+            return skipped, NodeTrace(node.id, node.operator, sig, NodeStatus.SKIPPED)
 
         rejected: str | None = None
         if reuse:
@@ -231,20 +266,6 @@ class Executor:
         leaked = {e.source_id for e in evidence} & view.revoked
         if leaked:  # operator bug: never store or return revoked content
             raise AccessDenied(f"node {node.id!r} returned revoked sources {sorted(leaked)}")
-        artifact = Artifact(
-            signature=sig,
-            operator=op.name,
-            operator_version=op.version,
-            output_contract=op.output_contract,
-            access_scope=node.access_scope,
-            access_policy_version=access_fp,
-            source_snapshot=node.source_snapshot,
-            index_version=node.index_version,
-            model_version=node.model_version,
-            input_signatures=tuple(a.signature for a in inputs),
-            evidence=evidence,
-            artifact_hash=compute_artifact_hash(op.output_contract, evidence),
-            created_at=now,
-        )
+        artifact = self._artifact(node, op, sig, access_fp, inputs, evidence, now)
         await self.store.put_artifact(artifact)
         return artifact, NodeTrace(node.id, node.operator, sig, NodeStatus.EXECUTED, rejected)

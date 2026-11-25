@@ -125,7 +125,8 @@ def render(meta: dict[str, Any], rows: list[dict[str, Any]]) -> str:
     w("|---|---|---|")
     pairs = [("deltaquery", "full"), ("deltaquery", DECISIVE), ("deltaquery", "exact_naive"),
              ("abl_dq_keys", DECISIVE), ("deltaquery", "abl_dq_keys"),
-             ("deltaquery", "dq_coarse_policy"), ("deltaquery", "dq_no_memcache")]  # fmt: skip
+             ("deltaquery", "dq_coarse_policy"), ("deltaquery", "dq_no_memcache"),
+             ("deltaquery", "dq_no_sufficiency")]  # fmt: skip
     for a, bsys in pairs:
         if a in by_sys and bsys in by_sys:
             ro = bootstrap_ratio(per_seq(rows, a, ops), per_seq(rows, bsys, ops))

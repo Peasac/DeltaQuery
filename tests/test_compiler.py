@@ -20,6 +20,7 @@ from deltaquery.compiler.planner import OUTPUT_ID, Planner, PlannerConfig
 from deltaquery.evidence.store import EvidenceStore
 from deltaquery.llm.base import LLMError
 from deltaquery.operators.bm25 import BM25Index, BM25Operator
+from deltaquery.operators.coverage import ClaimCheckOperator
 from deltaquery.operators.dense import DenseIndex, DenseOperator
 from deltaquery.operators.fusion import RRFOperator
 from deltaquery.operators.merge import MergeOperator
@@ -155,7 +156,13 @@ def test_compiler_retries_then_fails_closed() -> None:
 
 def _session(index: BM25Index, dense_index: DenseIndex, llm: Any) -> Session:
     store = EvidenceStore()
-    ops = [BM25Operator(index), DenseOperator(dense_index), RRFOperator(), MergeOperator()]
+    ops = [
+        BM25Operator(index),
+        DenseOperator(dense_index),
+        RRFOperator(),
+        MergeOperator(),
+        ClaimCheckOperator(index.passages),
+    ]
     planner = Planner(PlannerConfig(bm25=index, dense=dense_index, access_scope=SCOPE))
     executor = Executor(store, ops, make_policy(), clock=TickClock())
     return Session(IntentCompiler(llm, ENTITIES), planner, executor, principal=PRINCIPAL)
@@ -191,20 +198,28 @@ def test_worked_example_q1_to_q4(index: BM25Index, dense_index: DenseIndex) -> N
     assert t2.removed == _branch("azure", "disaster_recovery") | {"azure__evidence"}
     assert not any(e.source_id.startswith("azure") for e in t2.result.output.evidence)
 
-    # Q3 add_constraint(RPO == 0): DR evidence kept; RPO-targeted retrieval added.
+    # Q3 add_constraint(RPO == 0): DR evidence kept; sufficiency check over it. In this
+    # fixture neither provider states an exact RPO ("typically under one minute", "of zero"
+    # with no unit), so the checks find nothing and targeted retrieval runs.
+    checks = {"aws__rpo__check", "gcp__rpo__check"}
     assert [o.kind for o in t3.compiled.ops] == [RevisionKind.ADD_CONSTRAINT]
     assert t3.result.reused == aws_dr | gcp_dr
     assert t3.result.executed == (
-        _branch("aws", "rpo")
+        checks
+        | _branch("aws", "rpo")
         | _branch("gcp", "rpo")
         | {"aws__evidence", "gcp__evidence", OUTPUT_ID}
     )
+    assert all(not t3.result.artifacts[c].evidence for c in checks)
 
-    # Q4 add_dimension(pricing): pricing nodes added; DR and RPO evidence kept.
+    # Q4 add_dimension(pricing): pricing nodes added. The checks re-run (their inputs gained
+    # the pricing branch) but still find nothing, so the gate decision is unchanged and the
+    # RPO retrieval branches are reused rather than re-run.
     assert [o.kind for o in t4.compiled.ops] == [RevisionKind.ADD_DIMENSION]
     assert t4.result.reused == aws_dr | gcp_dr | _branch("aws", "rpo") | _branch("gcp", "rpo")
     assert t4.result.executed == (
-        _branch("aws", "pricing")
+        checks
+        | _branch("aws", "pricing")
         | _branch("gcp", "pricing")
         | {"aws__evidence", "gcp__evidence", OUTPUT_ID}
     )

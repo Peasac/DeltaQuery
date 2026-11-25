@@ -169,6 +169,7 @@ export default function TracePage() {
             <div className="legend">
               <span className="chip chip-executed">executed</span>
               <span className="chip chip-reused">reused</span>
+              <span className="chip chip-skipped">skipped: evidence sufficient</span>
               {plan.removed.length > 0 && (
                 <span className="chip chip-removed">removed since v{turn.version - 1}</span>
               )}

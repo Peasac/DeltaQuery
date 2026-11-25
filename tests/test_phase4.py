@@ -32,6 +32,7 @@ from deltaquery.evidence.models import Artifact, Evidence
 from deltaquery.evidence.store import EvidenceStore
 from deltaquery.operators.base import ExecutionContext
 from deltaquery.operators.bm25 import BM25Index, BM25Operator, BM25Params
+from deltaquery.operators.coverage import ClaimCheckOperator
 from deltaquery.operators.dense import DenseIndex, DenseOperator
 from deltaquery.operators.fusion import RRFOperator
 from deltaquery.operators.merge import MergeOperator
@@ -361,7 +362,13 @@ class GatedLLM:
 
 
 def _session(index: BM25Index, dense_index: DenseIndex, llm: Any) -> Session:
-    ops = [BM25Operator(index), DenseOperator(dense_index), RRFOperator(), MergeOperator()]
+    ops = [
+        BM25Operator(index),
+        DenseOperator(dense_index),
+        RRFOperator(),
+        MergeOperator(),
+        ClaimCheckOperator(index.passages),
+    ]
     ex = Executor(EvidenceStore(), ops, make_policy(), clock=TickClock())
     planner = Planner(PlannerConfig(bm25=index, dense=dense_index, access_scope=SCOPE))
     return Session(IntentCompiler(llm, ENTITIES), planner, ex, principal=PRINCIPAL)
@@ -501,7 +508,7 @@ def test_sdk_session_flow() -> None:
 
 def test_nodes_status_enum_is_stable() -> None:
     # The trace format is consumed by the (upcoming) UI; keep the wire values fixed.
-    assert [s.value for s in NodeStatus] == ["executed", "reused"]
+    assert [s.value for s in NodeStatus] == ["executed", "reused", "skipped"]
 
 
 def test_restoring_a_source_recomputes_affected_branch(

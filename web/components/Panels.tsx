@@ -36,6 +36,11 @@ export function TurnList({
             <span className="counts">
               <span className="count count-executed">{t.trace.executed_nodes.length} executed</span>
               <span className="count count-reused">{t.trace.reused_nodes.length} reused</span>
+              {t.trace.skipped_nodes.length > 0 && (
+                <span className="count count-skipped">
+                  {t.trace.skipped_nodes.length} skipped (sufficient)
+                </span>
+              )}
               <span className="count count-removed">{t.trace.removed_nodes.length} removed</span>
             </span>
           </button>

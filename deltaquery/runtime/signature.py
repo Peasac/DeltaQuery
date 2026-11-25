@@ -21,6 +21,7 @@ def node_signature(
     operator_version: str,
     input_artifact_hashes: Sequence[str],
     access_policy_version: str,
+    gate: str | None = None,
 ) -> str:
     return hash_canonical(
         "node",
@@ -37,5 +38,7 @@ def node_signature(
             "freshness_policy": node.freshness_policy.value,
             "max_age_s": node.max_age_s,
             "output_contract": node.output_contract,
+            # For gated nodes: the gate's decision ("run" | "skip"), not its content.
+            "gate": gate,
         },
     )

@@ -18,6 +18,7 @@ from typing import Any
 
 from deltaquery.compiler.intent import Attribute, Dimension, Intent
 from deltaquery.operators.bm25 import BM25Index, BM25Params
+from deltaquery.operators.coverage import ClaimCheckParams
 from deltaquery.operators.dense import DenseIndex, DenseParams
 from deltaquery.operators.fusion import RRFParams
 from deltaquery.runtime.models import FreshnessPolicy, Node, Plan
@@ -49,6 +50,10 @@ class PlannerConfig:
     # Retrieval for these dimensions expires after N seconds even on an unchanged snapshot
     # (prices go stale outside our corpus versioning).
     ttl_s: Mapping[Dimension, int] = field(default_factory=lambda: {Dimension.PRICING: 24 * 3600})
+    # Evidence sufficiency: a constrained attribute gets a `claim_check` node over the entity's
+    # topic branches, and its targeted retrieval branch is skipped when the check finds an
+    # exact claim. False = always run the targeted retrieval branch.
+    sufficiency: bool = True
 
 
 def _slug(s: str) -> str:
@@ -60,12 +65,18 @@ class Planner:
         self.c = config
 
     def _retrieval(
-        self, base: str, entity: str, query: str, max_age_s: int | None = None
+        self,
+        base: str,
+        entity: str,
+        query: str,
+        max_age_s: int | None = None,
+        gate: str | None = None,
     ) -> list[Node]:
         c = self.c
         common: dict[str, Any] = {
             "access_scope": c.access_scope,
             "output_contract": "ranked_passages",
+            "skip_if_nonempty": gate,
         }
         fresh: dict[str, Any] = (
             {"freshness_policy": FreshnessPolicy.TTL, "max_age_s": max_age_s}
@@ -108,6 +119,20 @@ class Planner:
         )
         return [lex, dense, fused]
 
+    def _claim_check(self, node_id: str, attr: Attribute, inputs: list[str]) -> Node:
+        c = self.c
+        return Node(
+            id=node_id,
+            operator="claim_check",
+            canonical_parameters=ClaimCheckParams(attribute=attr.value).model_dump(mode="json"),
+            input_ids=tuple(inputs),
+            source_snapshot=c.bm25.passages.source_snapshot,
+            index_version=c.bm25.passages.version,
+            model_version=None,
+            access_scope=c.access_scope,
+            output_contract="ranked_passages",
+        )
+
     def _merge(self, node_id: str, inputs: list[str]) -> Node:
         return Node(
             id=node_id,
@@ -134,9 +159,16 @@ class Planner:
                     base, entity, DIMENSION_QUERIES[dim], self.c.ttl_s.get(dim)
                 )
                 branches.append(base)
+            topic_branches = list(branches)
             for attr in attributes:
                 base = f"{e}__{attr.value}"
-                nodes += self._retrieval(base, entity, ATTRIBUTE_QUERIES[attr])
+                gate = None
+                if self.c.sufficiency:
+                    gate = f"{base}__check"
+                    nodes.append(self._claim_check(gate, attr, topic_branches))
+                    branches.append(gate)
+                # Targeted retrieval; skipped when the claim check already found the value.
+                nodes += self._retrieval(base, entity, ATTRIBUTE_QUERIES[attr], gate=gate)
                 branches.append(base)
             nodes.append(self._merge(f"{e}__evidence", branches))
             entity_outputs.append(f"{e}__evidence")

@@ -26,6 +26,7 @@ from deltaquery.evidence.store import EvidenceStore
 from deltaquery.llm.base import StructuredLLM
 from deltaquery.operators.base import Operator
 from deltaquery.operators.bm25 import BM25Index, BM25Operator
+from deltaquery.operators.coverage import ClaimCheckOperator
 from deltaquery.operators.dense import DenseIndex, DenseOperator
 from deltaquery.operators.embedding import Embedder, HashingEmbedder
 from deltaquery.operators.fusion import RRFOperator
@@ -69,6 +70,7 @@ class Runtime:
             DenseOperator(dense),
             RRFOperator(),
             MergeOperator(),
+            ClaimCheckOperator(passages),
         ]
         return cls(
             corpus=corpus,

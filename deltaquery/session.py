@@ -40,6 +40,7 @@ class TurnTrace:
     epoch: int
     executed_nodes: tuple[str, ...]
     reused_nodes: tuple[str, ...]
+    skipped_nodes: tuple[str, ...]  # gated off, e.g. existing evidence was sufficient
     removed_nodes: tuple[str, ...]
     reuse_rejections: tuple[tuple[str, str], ...]  # (node_id, reason) for signature hits refused
     compile_s: float
@@ -52,6 +53,7 @@ class TurnTrace:
             "epoch": self.epoch,
             "executed_nodes": list(self.executed_nodes),
             "reused_nodes": list(self.reused_nodes),
+            "skipped_nodes": list(self.skipped_nodes),
             "removed_nodes": list(self.removed_nodes),
             "reuse_rejections": [list(r) for r in self.reuse_rejections],
             "timing_s": {
@@ -145,6 +147,7 @@ class Session:
             epoch=epoch,
             executed_nodes=tuple(sorted(result.ids_with(NodeStatus.EXECUTED))),
             reused_nodes=tuple(sorted(result.ids_with(NodeStatus.REUSED))),
+            skipped_nodes=tuple(sorted(result.ids_with(NodeStatus.SKIPPED))),
             removed_nodes=tuple(sorted(prev_ids - ids)),
             reuse_rejections=tuple(
                 (t.node_id, t.reuse_rejected) for t in result.trace if t.reuse_rejected
