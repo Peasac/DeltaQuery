@@ -10,7 +10,8 @@ intent only if the message names it:
 
 A message that names two or more providers, none of them in the prior intent, is a new
 question: the prior is ignored and the proposal is grounded as a fresh question.
-A fresh question must name at least one provider (otherwise CompileError upstream).
+A fresh question must name at least one provider (otherwise CompileError upstream), and
+every provider it names is included (the model sometimes omits one).
 `task` is derived from the entity count (compare iff >= 2), which is what it means.
 
 Ungrounded changes are dropped, not retried (at temperature 0 a retry repeats the output).
@@ -26,7 +27,7 @@ from dataclasses import dataclass
 
 from deltaquery.compiler.intent import Attribute, Constraint, Dimension, Intent, Task
 
-GROUNDING_VERSION = "grounding-v1"
+GROUNDING_VERSION = "grounding-v2"
 
 DIMENSION_WORDS: dict[Dimension, tuple[str, ...]] = {
     Dimension.DISASTER_RECOVERY: (r"disaster[\s-]*recovery", r"\bdr\b", r"\bfailover\b"),
@@ -103,6 +104,9 @@ def _ground_fresh(text: str, proposed: Intent, m: Mentions) -> Grounded:
     notes: list[str] = []
     ents = [e for e in proposed.entities if e in m.entities]
     notes += [f"dropped unnamed entity {e}" for e in proposed.entities if e not in m.entities]
+    for e in sorted(m.entities - set(ents)):  # a provider named in a new question is in scope
+        ents.append(e)
+        notes.append(f"added named entity {e}")
     if m.dimensions:
         dims = [d for d in proposed.dimensions if d in m.dimensions]
         notes += [

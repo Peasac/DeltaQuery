@@ -129,6 +129,17 @@ def test_unrelated_question_replaces_the_prior() -> None:
     assert r.intent == intent(["ardor", "arthas"], ["regions"])
 
 
+def test_fresh_question_includes_every_named_provider() -> None:
+    # e2e failure: the model listed two of the three providers the question named.
+    r, _ = compile_(
+        "Compare Ardor, Arthas and Delwick on backup",
+        None,
+        out("compare", ["ardor", "arthas"], ["backup"]),
+    )
+    assert r.intent == intent(["ardor", "arthas", "delwick"], ["backup"])
+    assert any("added named entity delwick" in n for n in r.grounding_notes)
+
+
 def test_fresh_question_without_a_provider_fails_closed() -> None:
     with pytest.raises(CompileError):
         compile_("Also compare pricing", None, out("compare", ["ardor", "arthas"], ["pricing"]))
