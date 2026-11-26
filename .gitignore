@@ -9,3 +9,6 @@ __pycache__/
 
 # DeltaBench raw logs (large; regenerate with python -m deltaquery.eval)
 results/**/*.jsonl
+
+# External datasets (licensed separately; fetched, not redistributed)
+data/
