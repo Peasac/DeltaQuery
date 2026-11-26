@@ -17,7 +17,7 @@ claims novelty or real-world performance. Full design and decision log: [`projec
 | Does it beat exact operator caching on cost? | **No (pre-stated go/no-go).** About 1.09× the retrieval ops of a version-aware exact cache; the difference is the work needed to *not* serve revoked documents. |
 | Does it save work vs re-running everything? | Yes: 0.56× the retrieval ops of full re-execution. |
 | Does evidence sufficiency help? | With adequate base retrieval: 29–40% less retrieval on constraint revisions at matched recall (held-out split, pre-registered selection). With weak base retrieval it trades recall for cost. |
-| End to end with a local 4B LLM | Plan-equivalent intent match 0.65 on 40 providers; retrieval is ~0.1% of turn time. |
+| Can a local 4B LLM compile revisions reliably? | With deterministic grounding (a change is accepted only if the message names it): plan match 0.71 → **0.96** on 206 turns over 40 providers, and the model is skipped on neutral follow-ups. Caveat: the keyword lists match the benchmark's message templates. Retrieval is ~0.1% of turn time end to end. |
 
 Reports: [`results/deltabench/`](results/deltabench/). Methodology: dev/test split by provider
 family, repeated trials, bootstrap confidence intervals, ablations for each design choice,
@@ -34,13 +34,13 @@ and a planner change selected under a pre-registered rule.
   contains the revoked source (checked against full re-execution in tests).
 - **Evidence sufficiency**: deterministic claim extraction gates targeted retrieval;
   hedged statements never count as coverage.
-- **LLM boundary**: the model only produces a schema-constrained intent and cited answer
+- **LLM boundary**: the model only proposes a schema-constrained intent (each change is grounded against the message) and cited answer
   sentences; plans, edges and authorization never come from model output. Every answer
   sentence must cite verified source spans, or the system abstains.
 - **Epochs**: a superseded request can never commit, even if its work ignores cancellation.
 
 Stack: Python 3.11+, asyncio, Pydantic v2, SQLite, BM25 + dense retrieval, FastAPI, Next.js
-trace UI, local models via Ollama. 101 tests, including mutation-checked safety properties.
+trace UI, local models via Ollama. 112 tests, including mutation-checked safety properties.
 
 ## Commands
 
