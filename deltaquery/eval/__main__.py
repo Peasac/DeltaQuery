@@ -70,6 +70,14 @@ def main() -> None:
     e.add_argument("--model", default="qwen3.5:4b")
     e.add_argument("--world-seed", type=int, default=7)
     e.add_argument("--seq-seed", type=int, default=11)
+    c = sub.add_parser("compile")
+    c.add_argument("--n", type=int, default=40)
+    c.add_argument("--model", default="qwen3.5:4b")
+    c.add_argument("--world-seed", type=int, default=7)
+    c.add_argument("--seq-seed", type=int, default=11)
+    c.add_argument(
+        "--compare", action="store_true", help="run ungrounded and grounded on the same sequences"
+    )
     r = sub.add_parser("report")
     r.add_argument("log", type=Path)
     r.add_argument("--run-id")
@@ -85,6 +93,24 @@ def main() -> None:
     world = build_world(args.world_seed)
     seqs = generate_sequences(world, max(args.n, 1), args.seq_seed)
     RESULTS.mkdir(parents=True, exist_ok=True)
+    if args.cmd == "compile":
+        from deltaquery.eval.report import write_compile_report
+        from deltaquery.eval.runner import run_compile
+        from deltaquery.llm.ollama import OllamaLLM
+
+        log = RESULTS / "compile.jsonl"
+
+        async def go_compile() -> list[str]:
+            llm = await OllamaLLM.connect(args.model)
+            ids = []
+            for g in [False, True] if args.compare else [True]:
+                ids.append(await run_compile(world, seqs, llm, log, grounding=g))
+            return ids
+
+        ids = asyncio.run(go_compile())
+        out = write_compile_report(log, RESULTS / f"report-{ids[-1]}.md", ids)
+        print(f"runs {ids}\nlog {log}\nreport {out}")
+        return
     if args.cmd == "oracle":
         log = RESULTS / ("oracle-warm.jsonl" if args.warm else "oracle.jsonl")
         if args.split != "all":

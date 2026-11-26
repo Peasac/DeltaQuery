@@ -260,6 +260,74 @@ def _plan_equal(r: dict[str, Any]) -> bool:
     return all(g[k] == p[k] for k in ("entities", "dimensions", "constraints"))
 
 
+def render_compile(metas: list[dict[str, Any]], rows: list[dict[str, Any]]) -> str:
+    """Side-by-side intent accuracy for compile-only runs (e.g. grounded vs ungrounded)."""
+    out: list[str] = []
+    w = out.append
+    w("# Compiler accuracy (compile-only track)\n")
+    w(
+        "Each turn is compiled against the compiler's own committed prior, as in a session. "
+        "Single run per configuration, temperature 0. Plan-equivalent ignores `task`.\n"
+    )
+    w("| run | grounding | model | sequences | turns |")
+    w("|---|---|---|---:|---:|")
+    by_run: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for r in rows:
+        by_run[r["run_id"]].append(r)
+    for m in metas:
+        w(
+            f"| {m['run_id']} | {m['grounding']} | {m['model']} | {m['n_sequences']} | "
+            f"{len(by_run[m['run_id']])} |"
+        )
+
+    def mean(xs: list[float]) -> str:
+        return f"{statistics.fmean(xs):.3f}" if xs else "n/a"
+
+    def cells(rs: list[dict[str, Any]]) -> list[str]:
+        ok = [r for r in rs if "error" not in r]
+        return [
+            mean([float(r["intent_exact"]) for r in ok]),
+            mean([float(_plan_equal(r)) for r in ok]),
+            f"{len(rs) - len(ok)}",
+        ]
+
+    kinds = list(dict.fromkeys(r["kind"] for r in rows))
+    header = " | ".join(
+        f"{'grounded' if m['grounding'] else 'ungrounded'} exact | plan | errors" for m in metas
+    )
+    w(f"\n| kind | n | {header} |")
+    w("|---|---:|" + "---:|---:|---:|" * len(metas))
+    for k in [*kinds, "ALL"]:
+        row_cells: list[str] = []
+        n = 0
+        for m in metas:
+            rs = [r for r in by_run[m["run_id"]] if k == "ALL" or r["kind"] == k]
+            n = len(rs)
+            row_cells += cells(rs)
+        w(f"| {k} | {n} | " + " | ".join(row_cells) + " |")
+    for m in metas:
+        rs = by_run[m["run_id"]]
+        called = [r for r in rs if "error" not in r]
+        secs = [r["seconds"] for r in rs]
+        w(
+            f"\n- {'grounded' if m['grounding'] else 'ungrounded'}: model called on "
+            f"{sum(r['llm_called'] for r in called)}/{len(rs)} turns; median compile "
+            f"{statistics.median(secs):.2f} s."
+        )
+    return "\n".join(out) + "\n"
+
+
+def write_compile_report(log: Path, out: Path, run_ids: list[str]) -> Path:
+    metas: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+    for rid in run_ids:
+        meta, rs = load(log, rid)
+        metas.append(meta)
+        rows += rs
+    out.write_text(render_compile(metas, rows), encoding="utf-8")
+    return out
+
+
 def write_report(log: Path, out: Path, run_id: str | None = None) -> Path:
     meta, rows = load(log, run_id)
     text = render_e2e(meta, rows) if meta.get("track") == "e2e" else render(meta, rows)

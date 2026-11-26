@@ -145,10 +145,11 @@ def test_compiler_prompt_contains_only_user_text_and_prior_intent() -> None:
 def test_compiler_retries_then_fails_closed() -> None:
     good = RECORDED["sequence"][0]["output"]
     bad = {"task": "compare", "entities": ["aws", "oracle"], "dimensions": ["pricing"]}
-    r = run(IntentCompiler(ScriptedLLM([bad, good]), ENTITIES).compile("x"))
+    q = "Compare AWS and Azure disaster recovery"
+    r = run(IntentCompiler(ScriptedLLM([bad, good]), ENTITIES).compile(q))
     assert r.attempts == 2
     with pytest.raises(CompileError, match="oracle"):
-        run(IntentCompiler(ScriptedLLM([bad, LLMError("boom")]), ENTITIES).compile("x"))
+        run(IntentCompiler(ScriptedLLM([bad, LLMError("boom")]), ENTITIES).compile(q))
 
 
 # -- planner + session: the §5 worked example ---------------------------------------------
@@ -237,7 +238,9 @@ def test_worked_example_final_plan_matches_full_execution(
     async def go() -> tuple[Turn, Turn]:
         for s in seq[:-1]:
             await inc.ask(s["text"])
-        return await inc.ask(seq[-1]["text"]), await full.ask(seq[-1]["text"])
+        # A fresh session needs the self-contained form of the final question.
+        standalone = "Compare AWS and GCP on disaster recovery and pricing with an RPO of zero"
+        return await inc.ask(seq[-1]["text"]), await full.ask(standalone)
 
     t_inc, t_full = run(go())
     assert t_full.result.reused == set()

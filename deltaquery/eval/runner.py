@@ -260,3 +260,65 @@ async def run_e2e(
                 f.flush()
             await store.close()
     return run_id
+
+
+# -- compile-only track ---------------------------------------------------------------------
+
+
+async def run_compile(
+    world: World,
+    sequences: Seq[Sequence],
+    llm: StructuredLLM,
+    out_path: Path,
+    *,
+    grounding: bool = True,
+) -> str:
+    """Intent accuracy of the real compiler, no retrieval or generation. Each turn is compiled
+    against the *committed* prior (the compiler's own previous output), as in a session, so
+    errors propagate the same way they do end to end."""
+    tag = "grounded" if grounding else "ungrounded"
+    run_id = f"compile-{tag}-" + datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    run_id += "-" + uuid.uuid4().hex[:6]
+    compiler = IntentCompiler(llm, world.entity_ids, grounding=grounding)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with out_path.open("a", encoding="utf-8") as f:
+        meta = {
+            "run_id": run_id,
+            "track": "compile",
+            "dataset": DATASET_VERSION,
+            "model": llm.model_version,
+            "grounding": grounding,
+            "n_sequences": len(sequences),
+        }
+        f.write(json.dumps({"meta": meta}) + "\n")
+        for seq in sequences:
+            prior: Intent | None = None
+            for i, step in enumerate(seq.steps):
+                gold = Intent.model_validate(step.intent)
+                row: dict[str, Any] = {
+                    "run_id": run_id,
+                    "seq": seq.id,
+                    "split": seq.split,
+                    "step": i,
+                    "kind": step.kind,
+                    "text": step.text,
+                    "gold_intent": step.intent,
+                }
+                t0 = time.perf_counter()
+                try:
+                    r = await compiler.compile(step.text, prior)
+                except CompileError as exc:
+                    row |= {"error": str(exc)[:300], "seconds": time.perf_counter() - t0}
+                    f.write(json.dumps(row) + "\n")
+                    continue
+                prior = r.intent
+                row |= {
+                    "pred_intent": r.intent.model_dump(mode="json"),
+                    "intent_exact": r.intent == gold,
+                    "llm_called": r.attempts > 0,
+                    "notes": list(r.grounding_notes),
+                    "seconds": time.perf_counter() - t0,
+                }
+                f.write(json.dumps(row) + "\n")
+                f.flush()
+    return run_id
