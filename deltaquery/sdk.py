@@ -20,6 +20,7 @@ from typing import Any
 
 from deltaquery.compiler.compiler import IntentCompiler
 from deltaquery.compiler.planner import Planner, PlannerConfig
+from deltaquery.domain import DEFAULT_DOMAIN, Domain
 from deltaquery.evidence.access import AccessPolicy
 from deltaquery.evidence.corpus import Corpus, PassageSet
 from deltaquery.evidence.store import EvidenceStore
@@ -48,6 +49,7 @@ class Runtime:
     llm: StructuredLLM
     entities: frozenset[str]
     generate_answers: bool
+    domain: Domain = DEFAULT_DOMAIN
 
     @classmethod
     async def create(
@@ -60,6 +62,7 @@ class Runtime:
         embedder: Embedder | None = None,
         entities: Iterable[str] | None = None,
         generate_answers: bool = True,
+        domain: Domain = DEFAULT_DOMAIN,
     ) -> Runtime:
         passages = PassageSet(corpus)
         bm25 = BM25Index(passages)
@@ -70,7 +73,7 @@ class Runtime:
             DenseOperator(dense),
             RRFOperator(),
             MergeOperator(),
-            ClaimCheckOperator(passages),
+            ClaimCheckOperator(passages, domain),
         ]
         return cls(
             corpus=corpus,
@@ -85,17 +88,20 @@ class Runtime:
                 entities if entities is not None else {d.entity for d in corpus.documents}
             ),
             generate_answers=generate_answers,
+            domain=domain,
         )
 
     def session(self, *, scope: str, principal: str) -> Session:
-        planner = Planner(PlannerConfig(bm25=self.bm25, dense=self.dense, access_scope=scope))
+        planner = Planner(
+            PlannerConfig(bm25=self.bm25, dense=self.dense, access_scope=scope, domain=self.domain)
+        )
         generator = (
             AnswerGenerator(self.llm, SpanResolver(self.passages))
             if self.generate_answers
             else None
         )
         return Session(
-            IntentCompiler(self.llm, self.entities),
+            IntentCompiler(self.llm, self.entities, domain=self.domain),
             planner,
             self.executor,
             principal=principal,

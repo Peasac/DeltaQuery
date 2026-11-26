@@ -40,7 +40,7 @@ class ParameterError(ValueError):
 
 class Operator(ABC, Generic[P]):
     name: ClassVar[str]
-    version: ClassVar[str]  # bump whenever behaviour changes; part of every signature
+    version: str  # bump whenever behaviour changes; part of every signature (may be per instance)
     output_contract: ClassVar[str]
     params_model: ClassVar[type[BaseModel]]
     min_inputs: ClassVar[int] = 0

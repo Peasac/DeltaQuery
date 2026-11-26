@@ -157,4 +157,4 @@ def test_mentions_lexicon() -> None:
     m = mentions("DR and costs for Delmora; recovery time under 1 minute", VOCAB)
     assert m.entities == {"delmora"}
     assert m.dimensions == {Dimension.DISASTER_RECOVERY, Dimension.PRICING}
-    assert {a.value for a in m.attributes} == {"rto"}
+    assert m.attributes == {"rto"}

@@ -20,34 +20,34 @@ from pydantic import ValidationError
 
 from deltaquery.compiler.diff import RevisionOp, diff_intents
 from deltaquery.compiler.grounding import Mentions, ground, mentions, task_for
-from deltaquery.compiler.intent import (
-    Attribute,
-    Comparison,
-    Dimension,
-    Intent,
-    Task,
-    intent_json_schema,
-)
+from deltaquery.compiler.intent import Comparison, Intent, Task, intent_json_schema
+from deltaquery.domain import DEFAULT_DOMAIN, Domain
 from deltaquery.llm.base import LLMError, StructuredLLM
 
 PROMPT_VERSION = "intent-v1"
 
-SYSTEM_PROMPT = f"""You turn a user's question about cloud providers into a JSON retrieval intent.
+
+def system_prompt(domain: Domain = DEFAULT_DOMAIN) -> str:
+    hints = "".join(f"\n  {h}" for h in domain.prompt_hints)
+    example = f" {domain.constraint_example}" if domain.constraint_example else ""
+    return f"""You turn a user's question about {domain.entity_noun} into a JSON retrieval intent.
 
 Fields:
-- task: "{Task.COMPARE.value}" when two or more providers are compared, else "{Task.DESCRIBE.value}".
-- entities: providers mentioned, from the allowed list only.
-- dimensions: topics asked about, from: {", ".join(d.value for d in Dimension)}.
-  "DR" means disaster_recovery.
-- constraints: numeric requirements, each {{"attribute": one of {[a.value for a in Attribute]},
+- task: "{Task.COMPARE.value}" when two or more {domain.entity_short} are compared, else "{Task.DESCRIBE.value}".
+- entities: {domain.entity_short} mentioned, from the allowed list only.
+- dimensions: topics asked about, from: {", ".join(domain.topic_names)}.{hints}
+- constraints: numeric requirements, each {{"attribute": one of {list(domain.attribute_names)},
   "op": one of {[c.value for c in Comparison]} ("eq" for equal, "le" for at most),
-  "value_seconds": integer seconds}}. "RPO of zero" -> {{"attribute":"rpo","op":"eq","value_seconds":0}}.
+  "value_seconds": integer seconds}}.{example}
 
 If a PREVIOUS INTENT is given, the new message revises it. Output the COMPLETE updated intent:
 apply only the change the user asks for and keep every other field exactly as before.
 "Replace X with Y" removes X and adds Y. "Also consider/add Z" adds Z.
 If the new message is an unrelated question, ignore the previous intent.
 Output JSON only."""
+
+
+SYSTEM_PROMPT = system_prompt()
 
 
 class CompileError(ValueError):
@@ -82,13 +82,17 @@ class IntentCompiler:
         timeout_s: float = 60.0,
         max_attempts: int = 2,
         grounding: bool = True,
+        domain: Domain = DEFAULT_DOMAIN,
     ) -> None:
         self.llm = llm
         self.entities = frozenset(entities)
         self.timeout_s = timeout_s
         self.max_attempts = max_attempts
         self.grounding = grounding
-        self._schema = intent_json_schema(self.entities)
+        self.domain = domain
+        self._ctx = {"entities": self.entities, "domain": domain}
+        self._system = system_prompt(domain)
+        self._schema = intent_json_schema(self.entities, domain)
 
     def _result(
         self, prior: Intent | None, intent: Intent, attempts: int, notes: tuple[str, ...] = ()
@@ -115,12 +119,12 @@ class IntentCompiler:
                 "dimensions": list(g.dimensions),
                 "constraints": [c.model_dump(mode="json") for c in g.constraints],
             },
-            context={"entities": self.entities},
+            context=self._ctx,
         )
         return intent, g.notes
 
     async def compile(self, text: str, prior: Intent | None = None) -> CompileResult:
-        m = mentions(text, self.entities) if self.grounding else None
+        m = mentions(text, self.entities, self.domain) if self.grounding else None
         if m is not None and m.empty:
             if prior is None:
                 raise CompileError(f"message names no provider, topic or attribute: {text!r}"[:300])
@@ -131,11 +135,11 @@ class IntentCompiler:
         for attempt in range(1, self.max_attempts + 1):
             try:
                 raw = await self.llm.complete_json(
-                    system=SYSTEM_PROMPT, user=user, schema=self._schema, timeout_s=self.timeout_s
+                    system=self._system, user=user, schema=self._schema, timeout_s=self.timeout_s
                 )
                 if m is not None and isinstance(raw.get("entities"), list):
                     raw = {**raw, "task": task_for(raw["entities"])}  # task follows entities
-                intent = Intent.model_validate(raw, context={"entities": self.entities})
+                intent = Intent.model_validate(raw, context=self._ctx)
             except (LLMError, ValidationError, TimeoutError) as exc:
                 errors.append(f"attempt {attempt}: {type(exc).__name__}: {exc}"[:500])
                 continue

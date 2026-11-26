@@ -17,20 +17,28 @@ hash; evidence that cannot be verified does not count as covering.
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Literal
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from deltaquery.canonical import hash_canonical
+from deltaquery.domain import DEFAULT_DOMAIN, Domain
 from deltaquery.evidence.corpus import Passage, PassageSet
 from deltaquery.evidence.models import Artifact, CoverageType, Evidence
-from deltaquery.operators.base import RANKED_PASSAGES, BoundVersions, ExecutionContext, Operator
-from deltaquery.operators.claims import EXTRACTOR_VERSION, extract_claims
+from deltaquery.operators.base import (
+    RANKED_PASSAGES,
+    BoundVersions,
+    ExecutionContext,
+    Operator,
+    ParameterError,
+)
+from deltaquery.operators.claims import EXTRACTOR_VERSION, compile_patterns, extract_claims
 
 
 class ClaimCheckParams(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    attribute: Literal["rpo", "rto"]
+    attribute: str
 
 
 class ClaimCheckOperator(Operator[ClaimCheckParams]):
@@ -41,8 +49,14 @@ class ClaimCheckOperator(Operator[ClaimCheckParams]):
     min_inputs = 1
     max_inputs = None
 
-    def __init__(self, passages: PassageSet) -> None:
+    def __init__(self, passages: PassageSet, domain: Domain = DEFAULT_DOMAIN) -> None:
         self.passages = passages
+        labels = domain.claim_labels
+        self._patterns = compile_patterns(labels)
+        # The label patterns decide coverage, so they are part of the operator version (and
+        # therefore of every signature): the default domain keeps the historical version.
+        if labels != DEFAULT_DOMAIN.claim_labels:
+            self.version = f"{type(self).version}+labels:{hash_canonical('labels', labels)[:16]}"
         self._by_key: dict[tuple[str, str, int, int], Passage] = {
             (p.source_id, p.source_version, p.span.start, p.span.end): p for p in passages.passages
         }
@@ -55,6 +69,12 @@ class ClaimCheckOperator(Operator[ClaimCheckParams]):
             index_version=self.passages.version,
             model_version=None,
         )
+
+    def parse_params(self, raw: dict[str, Any]) -> ClaimCheckParams:
+        params = super().parse_params(raw)
+        if params.attribute not in self._patterns:
+            raise ParameterError(f"claim_check: unknown attribute {params.attribute!r}")
+        return params
 
     def access_dependencies(
         self, params: ClaimCheckParams, access_scope: str, revoked: frozenset[str]
@@ -76,7 +96,7 @@ class ClaimCheckOperator(Operator[ClaimCheckParams]):
                 text = self._text(e)
                 if key in seen or text is None:
                     continue
-                claims = extract_claims(text, (params.attribute,))
+                claims = extract_claims(text, (params.attribute,), self._patterns)
                 if claims:
                     seen.add(key)
                     covering.append(

@@ -11,6 +11,9 @@ Bump EXTRACTOR_VERSION whenever patterns change: it is part of every signature t
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
+
+from deltaquery.domain import DEFAULT_DOMAIN
 
 EXTRACTOR_VERSION = "regex-v1"
 
@@ -28,28 +31,31 @@ _HEDGES = re.compile(
     r"near|nearly|almost|over|more than)\b",
     re.I,
 )
-_LABELS = {
-    "rpo": r"(?:\bRPO\b|recovery point objective)",
-    "rto": r"(?:\bRTO\b|recovery time objective)",
-}
+_LABELS = DEFAULT_DOMAIN.claim_labels
 _VALUE = r"(\d+|zero)\s*(seconds?|minutes?|hours?)\b"
 
 ATTRIBUTES = tuple(_LABELS)
 
 
-def _patterns() -> dict[str, re.Pattern[str]]:
+def compile_patterns(labels: Mapping[str, str]) -> dict[str, re.Pattern[str]]:
     # label, then a short gap inside the same sentence, then the value
-    return {a: re.compile(rf"{lab}([^.\n]{{0,60}}?)\b{_VALUE}", re.I) for a, lab in _LABELS.items()}
+    return {a: re.compile(rf"{lab}([^.\n]{{0,60}}?)\b{_VALUE}", re.I) for a, lab in labels.items()}
 
 
-_PATTERNS = _patterns()
+_PATTERNS = compile_patterns(_LABELS)
 
 
-def extract_claims(text: str, attributes: tuple[str, ...] = ATTRIBUTES) -> tuple[str, ...]:
-    """Exact claims like ('rpo=30s',) found in `text` for the given attributes."""
+def extract_claims(
+    text: str,
+    attributes: tuple[str, ...] = ATTRIBUTES,
+    patterns: Mapping[str, re.Pattern[str]] | None = None,
+) -> tuple[str, ...]:
+    """Exact claims like ('rpo=30s',) found in `text` for the given attributes. `patterns`
+    defaults to the default domain's labels; an attribute without a pattern raises KeyError."""
+    pats = _PATTERNS if patterns is None else patterns
     out: list[str] = []
     for attr in attributes:
-        m = _PATTERNS[attr].search(text)
+        m = pats[attr].search(text)
         if m is None:
             continue
         gap, number, unit = m.group(1), m.group(2).lower(), m.group(3).lower()

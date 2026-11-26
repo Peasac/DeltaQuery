@@ -48,12 +48,12 @@ def diff_intents(prior: Intent | None, new: Intent) -> tuple[RevisionOp, ...]:
         ops.append(RevisionOp(kind=RevisionKind.ADD_ENTITY, new=new_e))
 
     for d in sorted(set(new.dimensions) - set(prior.dimensions)):
-        ops.append(RevisionOp(kind=RevisionKind.ADD_DIMENSION, new=d.value))
+        ops.append(RevisionOp(kind=RevisionKind.ADD_DIMENSION, new=d))
     for d in sorted(set(prior.dimensions) - set(new.dimensions)):
-        ops.append(RevisionOp(kind=RevisionKind.REMOVE_DIMENSION, old=d.value))
+        ops.append(RevisionOp(kind=RevisionKind.REMOVE_DIMENSION, old=d))
 
     def fmt(c: Constraint) -> str:
-        return f"{c.attribute.value} {c.op.value} {c.value_seconds}s"
+        return f"{c.attribute} {c.op.value} {c.value_seconds}s"
 
     for c in sorted(set(new.constraints) - set(prior.constraints), key=lambda c: c.sort_key()):
         ops.append(RevisionOp(kind=RevisionKind.ADD_CONSTRAINT, new=fmt(c)))

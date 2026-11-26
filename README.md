@@ -40,7 +40,8 @@ and a planner change selected under a pre-registered rule.
 - **Epochs**: a superseded request can never commit, even if its work ignores cancellation.
 
 Stack: Python 3.11+, asyncio, Pydantic v2, SQLite, BM25 + dense retrieval, FastAPI, Next.js
-trace UI, local models via Ollama. 112 tests, including mutation-checked safety properties.
+trace UI, local models via Ollama. 120 tests, including mutation-checked safety properties.
+Topics, attributes and their keyword/query/claim patterns are a `Domain` config (`deltaquery/domain.py`).
 
 ## Commands
 

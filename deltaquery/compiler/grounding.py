@@ -15,8 +15,9 @@ every provider it names is included (the model sometimes omits one).
 `task` is derived from the entity count (compare iff >= 2), which is what it means.
 
 Ungrounded changes are dropped, not retried (at temperature 0 a retry repeats the output).
-The keyword lists are deliberately small; a missed synonym makes the compiler keep the prior
-slot (a wrong plan, never a stale reuse), and such misses should be added as fixtures.
+Keyword lists come from the domain (deltaquery/domain.py) and are deliberately small; a missed
+synonym makes the compiler keep the prior slot (a wrong plan, never a stale reuse), and such
+misses should be added as fixtures.
 """
 
 from __future__ import annotations
@@ -25,29 +26,19 @@ import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from deltaquery.compiler.intent import Attribute, Constraint, Dimension, Intent, Task
+from deltaquery.compiler.intent import Constraint, Intent, Task
+from deltaquery.domain import DEFAULT_DOMAIN, Domain
 
 GROUNDING_VERSION = "grounding-v2"
 
-DIMENSION_WORDS: dict[Dimension, tuple[str, ...]] = {
-    Dimension.DISASTER_RECOVERY: (r"disaster[\s-]*recovery", r"\bdr\b", r"\bfailover\b"),
-    Dimension.PRICING: (r"\bpric(?:e|es|ing)\b", r"\bcosts?\b", r"\bbilling\b"),
-    Dimension.BACKUP: (r"\bbackups?\b",),
-    Dimension.REGIONS: (r"\bregions?\b",),
-    Dimension.ENCRYPTION: (r"\bencrypt(?:ion|ed|s)?\b",),
-}
-ATTRIBUTE_WORDS: dict[Attribute, tuple[str, ...]] = {
-    Attribute.RPO: (r"\brpo\b", r"recovery[\s-]+point"),
-    Attribute.RTO: (r"\brto\b", r"recovery[\s-]+time"),
-}
 _NUMBER_WORDS = {0: ("zero", "no")}
 
 
 @dataclass(frozen=True)
 class Mentions:
     entities: frozenset[str]
-    dimensions: frozenset[Dimension]
-    attributes: frozenset[Attribute]
+    dimensions: frozenset[str]
+    attributes: frozenset[str]
 
     @property
     def empty(self) -> bool:
@@ -64,11 +55,11 @@ def _entity_pattern(entity_id: str) -> str:
     return r"\b" + body + r"\b"
 
 
-def mentions(text: str, vocabulary: Iterable[str]) -> Mentions:
+def mentions(text: str, vocabulary: Iterable[str], domain: Domain = DEFAULT_DOMAIN) -> Mentions:
     t = text.casefold()
     ents = frozenset(e for e in vocabulary if re.search(_entity_pattern(e), t))
-    dims = frozenset(d for d, pats in DIMENSION_WORDS.items() if _has(t, pats))
-    attrs = frozenset(a for a, pats in ATTRIBUTE_WORDS.items() if _has(t, pats))
+    dims = frozenset(x.name for x in domain.topics if _has(t, x.keywords))
+    attrs = frozenset(x.name for x in domain.attributes if _has(t, x.keywords))
     return Mentions(ents, dims, attrs)
 
 
@@ -95,7 +86,7 @@ def _grounded_new_constraints(
 @dataclass(frozen=True)
 class Grounded:
     entities: tuple[str, ...]
-    dimensions: tuple[Dimension, ...]
+    dimensions: tuple[str, ...]
     constraints: tuple[Constraint, ...]
     notes: tuple[str, ...]  # one line per dropped/restored change
 
@@ -110,18 +101,16 @@ def _ground_fresh(text: str, proposed: Intent, m: Mentions) -> Grounded:
     if m.dimensions:
         dims = [d for d in proposed.dimensions if d in m.dimensions]
         notes += [
-            f"dropped unnamed dimension {d.value}"
-            for d in proposed.dimensions
-            if d not in m.dimensions
+            f"dropped unnamed dimension {d}" for d in proposed.dimensions if d not in m.dimensions
         ]
         if not dims:  # model picked none of the named topics: use the named ones
-            dims = sorted(m.dimensions, key=lambda d: d.value)
+            dims = sorted(m.dimensions)
             notes.append("dimensions taken from the message")
     else:
         dims = list(proposed.dimensions)  # nothing to ground against
     cons = _grounded_new_constraints(proposed.constraints, m, text)
     notes += [
-        f"dropped ungrounded constraint {c.attribute.value}"
+        f"dropped ungrounded constraint {c.attribute}"
         for c in proposed.constraints
         if c not in cons
     ]
@@ -149,16 +138,16 @@ def ground(text: str, prior: Intent | None, proposed: Intent, m: Mentions) -> Gr
 
     p_d, n_d = set(prior.dimensions), set(proposed.dimensions)
     dims = set(p_d)
-    for d in sorted(n_d - p_d, key=lambda d: d.value):
+    for d in sorted(n_d - p_d):
         if d in m.dimensions:
             dims.add(d)
         else:
-            notes.append(f"dropped unnamed dimension {d.value}")
-    for d in sorted(p_d - n_d, key=lambda d: d.value):
+            notes.append(f"dropped unnamed dimension {d}")
+    for d in sorted(p_d - n_d):
         if d in m.dimensions:
             dims.discard(d)
         else:
-            notes.append(f"kept dimension {d.value} (removal not requested)")
+            notes.append(f"kept dimension {d} (removal not requested)")
     if not dims:
         dims = set(p_d)
         notes.append("kept prior dimensions (none would remain)")
@@ -168,7 +157,7 @@ def ground(text: str, prior: Intent | None, proposed: Intent, m: Mentions) -> Gr
     for c in _grounded_new_constraints(sorted(n_c - p_c, key=Constraint.sort_key), m, text):
         cons = {x for x in cons if x.attribute != c.attribute} | {c}  # one value per attribute
     notes += [
-        f"dropped ungrounded constraint {c.attribute.value}"
+        f"dropped ungrounded constraint {c.attribute}"
         for c in sorted(n_c - p_c, key=Constraint.sort_key)
         if c not in cons
     ]
@@ -178,10 +167,10 @@ def ground(text: str, prior: Intent | None, proposed: Intent, m: Mentions) -> Gr
         if c.attribute in m.attributes:
             cons.discard(c)
         else:
-            notes.append(f"kept constraint {c.attribute.value} (removal not requested)")
+            notes.append(f"kept constraint {c.attribute} (removal not requested)")
     return Grounded(
         tuple(sorted(ents)),
-        tuple(sorted(dims, key=lambda d: d.value)),
+        tuple(sorted(dims)),
         tuple(sorted(cons, key=Constraint.sort_key)),
         tuple(notes),
     )

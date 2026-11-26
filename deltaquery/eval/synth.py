@@ -56,8 +56,8 @@ def entity_names(seed: int) -> list[str]:
     return [c.capitalize() for c in combos[:N_ENTITIES]]
 
 
-def source_id(entity: str, dim: Dimension) -> str:
-    return f"{entity.lower()}-{dim.value.replace('_', '-')}"
+def source_id(entity: str, dim: str) -> str:
+    return f"{entity.lower()}-{str(dim).replace('_', '-')}"
 
 
 @dataclass(frozen=True)
@@ -304,7 +304,7 @@ def generate_sequences(world: World, n: int = 300, seed: int = 11) -> list[Seque
             elif kind == "remove_constraint":
                 c0 = rng.choice(cons)
                 cons = [x for x in cons if x != c0]
-                text = f"Remove the {c0.attribute.value.upper()} requirement"
+                text = f"Remove the {c0.attribute.upper()} requirement"
             elif kind == "repeat":
                 text = "Show that again"
             elif kind == "unrelated":
