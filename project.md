@@ -292,3 +292,16 @@ Proceed to a paper **only if** the engine beats exact operator caching on meanin
 - Data: 15 conversations / 85 messages from sequence seed 29 (greedy selection covering every revision kind; `bench/paraphrase-v1/sheet.md`). A person rewrites every message from a description of its meaning (gold intent and diff), never seeing the benchmark wording or the keyword lists. Gold intents are unchanged.
 - Run: `compile --compare --seq-seed 29 --texts bench/paraphrase-v1/sheet.md`, qwen3.5:4b, one run each. Compare with the same 15 conversations in the templated seed-29 run (`compile-*-20261126T16*`).
 - Report: plan-equivalent match grounded vs ungrounded, by kind; every grounded miss classified as (a) lexicon miss (grounding blocked a correct model change, or carried forward a message that did change something), (b) model error, or (c) sheet ambiguity. No lexicon change before this report is written; any later lexicon fix is evaluated on a fresh paraphrase set, not this one.
+
+**Phase 12 results (paraphrase track, per the pre-registration above)**
+- Writer: no person was available, so ollama/qwen3.5:9b (a different, larger model than the 4B compiler; it never saw the benchmark wording or the keyword lists) filled the sheet from the meaning descriptions only (`bench/paraphrase-v1/sheet-qwen9b.md`). A first pass omitted the "currently:" state lines from the writer's input, and several re-asks referred to stale states; the input was fixed and all 15 were regenerated (not just the bad ones). Checking against the gold meanings only, 3 conversations were still excluded (re-asks naming the wrong providers; reasons and generated text kept in the file). 12 conversations / 67 messages remain.
+- Report `results/deltabench/report-compile-grounded-20261126T193508Z-d8e088.md`. Plan-equivalent match on the same 67 turns:
+
+  | | templated wording | paraphrased |
+  |---|---:|---:|
+  | ungrounded | 43/67 (0.642) | 41/67 (0.612) |
+  | grounded | 67/67 (1.000) | **63/67 (0.940)** |
+
+- All 4 grounded misses come from **one** first error, which then propagates: "oops, change that to Quinmora now" (current: Galnix and Isnix). The swap names only the new provider and refers to the old one as "that". The model itself proposed dropping *both* old providers; grounding correctly restored Isnix but also kept Galnix, because a removal must be named. Classification: (a) a grounding-rule miss (anaphoric replacement), compounded by (b) a model error. The failure is in the conservative direction (an extra provider gets retrieved; nothing stale or unrequested is dropped). Ungrounded, the same turn failed outright (invalid intent).
+- No lexicon misses for topics or attributes: the writer varied verbs and structure but mostly kept topic words ("disaster recovery", "pricing"/"prices", "RPO"), so this set probes rephrased *actions* more than synonyms. It is a weak test of synonym coverage (e.g. "keys" for encryption, "outage recovery" for DR); a person-written set remains the stronger test. Single run; 67 turns, so the 0.940 has a wide interval.
+- Candidate rule (not applied; must be evaluated on a fresh paraphrase set): a replacement verb ("change/switch/swap ... to X") whose old side is a pronoun may remove a prior entity when the model proposes exactly one removal. Today the model proposed two, so even this rule would need care.
