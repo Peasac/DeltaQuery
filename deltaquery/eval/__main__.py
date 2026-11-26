@@ -4,6 +4,8 @@ python -m deltaquery.eval generate [--n 300]           write dataset files to be
 python -m deltaquery.eval oracle [--trials 3] [--n N]   run oracle track, append log, report
 python -m deltaquery.eval e2e --n 10 [--model M]        run e2e track (local Ollama), report
 python -m deltaquery.eval report LOG [--run-id ID]      regenerate a report from a log
+python -m deltaquery.eval paraphrase-sheet --seq-seed 29 [--n 40] [--k 15] [--out PATH]
+python -m deltaquery.eval compile --texts SHEET ...     compile track on reworded messages
 """
 
 from __future__ import annotations
@@ -78,6 +80,13 @@ def main() -> None:
     c.add_argument(
         "--compare", action="store_true", help="run ungrounded and grounded on the same sequences"
     )
+    c.add_argument("--texts", type=Path, help="filled paraphrase sheet replacing message texts")
+    ps = sub.add_parser("paraphrase-sheet")
+    ps.add_argument("--n", type=int, default=40)
+    ps.add_argument("--k", type=int, default=15)
+    ps.add_argument("--world-seed", type=int, default=7)
+    ps.add_argument("--seq-seed", type=int, default=29)
+    ps.add_argument("--out", type=Path, default=Path("bench") / "paraphrase-v1" / "sheet.md")
     r = sub.add_parser("report")
     r.add_argument("log", type=Path)
     r.add_argument("--run-id")
@@ -93,12 +102,30 @@ def main() -> None:
     world = build_world(args.world_seed)
     seqs = generate_sequences(world, max(args.n, 1), args.seq_seed)
     RESULTS.mkdir(parents=True, exist_ok=True)
+    if args.cmd == "paraphrase-sheet":
+        from deltaquery.eval.paraphrase import build_sheet, select
+
+        chosen = select(seqs, args.k)
+        src = f"world seed {args.world_seed}, sequence seed {args.seq_seed}, first {args.n}"
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(build_sheet(world, chosen, src), encoding="utf-8")
+        turns = sum(len(q.steps) for q in chosen)
+        print(f"wrote {args.out} ({len(chosen)} conversations, {turns} messages)")
+        return
     if args.cmd == "compile":
         from deltaquery.eval.report import write_compile_report
         from deltaquery.eval.runner import run_compile
         from deltaquery.llm.ollama import OllamaLLM
 
         log = RESULTS / "compile.jsonl"
+        if args.texts is not None:
+            from deltaquery.eval.paraphrase import apply_texts, parse_sheet
+
+            seqs = apply_texts(seqs, parse_sheet(args.texts.read_text(encoding="utf-8")))
+            if not seqs:
+                raise SystemExit(f"{args.texts}: no fully answered conversation")
+            log = RESULTS / "compile-paraphrase.jsonl"
+            print(f"{len(seqs)} answered conversations from {args.texts}")
 
         async def go_compile() -> list[str]:
             llm = await OllamaLLM.connect(args.model)
