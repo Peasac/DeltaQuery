@@ -38,9 +38,10 @@ DIMENSION_QUERIES_V2: dict[str, str] = {
 }
 
 # Pre-registered variants (project.md, Phase 7). Values are PlannerConfig overrides.
+# Every variant pins fused_k explicitly so it does not move with the library default.
 PLANNER_VARIANTS: dict[str, dict[str, object]] = {
-    "A": {},
-    "B": {"dimension_queries": DIMENSION_QUERIES_V2},
+    "A": {"fused_k": 3},
+    "B": {"dimension_queries": DIMENSION_QUERIES_V2, "fused_k": 3},
     "C": {"fused_k": 5},
     "D": {"dimension_queries": DIMENSION_QUERIES_V2, "fused_k": 5},
 }
@@ -54,7 +55,8 @@ class PlannerConfig:
     dense: DenseIndex
     access_scope: str
     candidates_k: int = 5
-    fused_k: int = 3
+    # 5 = planner variant C, selected under the Phase 7 pre-registration (was 3 = variant A).
+    fused_k: int = 5
     # Topic queries, attribute queries and TTLs default to the domain's; the two overrides
     # exist for planner variants.
     domain: Domain = DEFAULT_DOMAIN
