@@ -37,10 +37,11 @@ and a planner change selected under a pre-registered rule.
 - **LLM boundary**: the model only proposes a schema-constrained intent (each change is grounded against the message) and cited answer
   sentences; plans, edges and authorization never come from model output. Every answer
   sentence must cite verified source spans, or the system abstains.
-- **Epochs**: a superseded request can never commit, even if its work ignores cancellation.
+- **Epochs**: a superseded request can never commit, even if its work ignores cancellation;
+  its in-flight LLM call is aborted (the next question no longer waits behind it: 2.7 s vs 39.9 s).
 
 Stack: Python 3.11+, asyncio, Pydantic v2, SQLite, BM25 + dense retrieval, FastAPI, Next.js
-trace UI, local models via Ollama. 120 tests, including mutation-checked safety properties.
+trace UI, local models via Ollama. 128 tests, including mutation-checked safety properties.
 Topics, attributes and their keyword/query/claim patterns are a `Domain` config (`deltaquery/domain.py`).
 
 ## Commands
@@ -62,5 +63,4 @@ cd web && npm install && npm run dev     # http://localhost:3000, proxies /api -
 ## Limitations
 
 Synthetic data only (a real dataset, e.g. FinanceBench, is the next step); placeholder
-authentication; the in-process cache is per process; cancelling a superseded request does
-not abort its in-flight local LLM call.
+authentication; the in-process cache is per process.
